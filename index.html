@@ -3394,8 +3394,8 @@
       threeCamera: null,
       threeRenderer: null,
       worldGroup: null,
-      originLngLat: [128.6993, 35.2094],
-      selectedUnitLngLat: [128.6993, 35.2094],
+      originLngLat: [128.6991, 35.2088],
+      selectedUnitLngLat: [128.6991, 35.2088],
       selectedDongRotDeg: 0,
       customLayerId: "threejs-complex-3d"
     };
@@ -3403,7 +3403,7 @@
     // Exact GPS coordinates aligned directly to the OpenFreeMap Changwon Gaeum-dong complex labels
     const CORRECTED_REAL_COORDS = {
       "thesharp1": { lng: 128.7011, lat: 35.2084 },
-      "thesharp2": { lng: 128.6993, lat: 35.2094 },
+      "thesharp2": { lng: 128.6991, lat: 35.2088 },
       "thesharp3": { lng: 128.6967, lat: 35.2096 },
       "hanhwa":    { lng: 128.6950, lat: 35.2106 },
       "prugio":    { lng: 128.6922, lat: 35.2082 },
@@ -3594,7 +3594,7 @@
       locMap.dongMarkers = [];
     }
 
-    // Measure exact centroid, area, oriented bounding box (length, depth, angle) of a real OSM building polygon in meters!
+    // Measure centroid & real area (m^2) of a real OSM silhouette polygon
     function measureRealBuildingPolygon(ring, origLng, origLat) {
       const n = ring.length - (ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1] ? 1 : 0);
       if (n < 3) return null;
@@ -3604,61 +3604,27 @@
 
       const mLat = 111320;
       const mLng = 111320 * Math.cos(origLat * Math.PI / 180);
-
-      // Local meters relative to polygon centroid (+x = East, +z = South)
-      const pts = [];
       let area2 = 0;
       for (let i = 0; i < n; i++) {
-        pts.push([(ring[i][0] - cxLng) * mLng, -(ring[i][1] - cyLat) * mLat]);
-      }
-      for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        area2 += pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
+        const x1 = (ring[i][0] - cxLng) * mLng, y1 = (ring[i][1] - cyLat) * mLat;
+        const x2 = (ring[j][0] - cxLng) * mLng, y2 = (ring[j][1] - cyLat) * mLat;
+        area2 += x1 * y2 - x2 * y1;
       }
       const areaM2 = Math.abs(area2) * 0.5;
-
-      // Find longest edge direction to align the Three.js BoxGeometry with the real building's exact orientation!
-      let bestLen = 0, bestAng = 0;
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        const dx = pts[j][0] - pts[i][0];
-        const dz = pts[j][1] - pts[i][1];
-        const len = Math.hypot(dx, dz);
-        if (len > bestLen) { bestLen = len; bestAng = Math.atan2(dz, dx); }
-      }
-      // Keep facade facing South (+Z) / West-to-East (+X)
-      if (Math.cos(bestAng) < 0) bestAng += Math.PI;
-
-      const cosA = Math.cos(-bestAng), sinA = Math.sin(-bestAng);
-      let uMin = Infinity, uMax = -Infinity, vMin = Infinity, vMax = -Infinity;
-      pts.forEach(([x, z]) => {
-        const u = x * cosA - z * sinA;
-        const v = x * sinA + z * cosA;
-        if (u < uMin) uMin = u;
-        if (u > uMax) uMax = u;
-        if (v < vMin) vMin = v;
-        if (v > vMax) vMax = v;
-      });
-
-      const lengthM = Math.max(14, uMax - uMin);
-      const depthM = Math.max(9, vMax - vMin);
-      const relX = (cxLng - origLng) * mLng;      // East in meters
-      const relZ = -(cyLat - origLat) * mLat;     // South in meters
+      const relX = (cxLng - origLng) * mLng;
+      const relZ = -(cyLat - origLat) * mLat;
 
       return {
         lng: cxLng,
         lat: cyLat,
-        relX,
-        relZ,
-        lengthM,
-        depthM,
-        rotY: -bestAng, // Three.js Y-rotation aligns +X with (cos(bestAng), sin(bestAng)) in XZ plane
         areaM2,
-        distM: Math.hypot(relX, relZ)
+        distM: Math.hypot(relX, relZ),
+        poly: [ring]
       };
     }
 
-    // Extract the EXACT real apartment building footprints from MapLibre's live OpenFreeMap tiles inside the complex block!
+    // Extract ALL distinct real building silhouettes inside the complex block (e.g. all 6 real silhouettes of 더샵 2단지!)
     function extractExactDongFootprints(cx, origLng, origLat) {
       const map = locMap.map;
       if (!map || !map.isStyleLoaded()) return null;
@@ -3670,8 +3636,7 @@
       }
 
       const bKeys = Object.keys(cx.buildings);
-      const candidates = [];
-      const seen = new Set();
+      const raw = [];
 
       feats.forEach(f => {
         if (!f.geometry) return;
@@ -3681,20 +3646,25 @@
         if (!ring || ring.length < 4) return;
 
         const m = measureRealBuildingPolygon(ring, origLng, origLat);
-        // Filter strictly to real apartment towers inside the complex block (area >= 220m², within 138m of complex center)
-        if (!m || m.areaM2 < 220 || m.distM > 138) return;
-
-        const dedupKey = `${Math.round(m.lng * 8000)}_${Math.round(m.lat * 8000)}`;
-        if (seen.has(dedupKey)) return;
-        seen.add(dedupKey);
-        candidates.push(m);
+        // Real apartment towers inside the complex block (area >= 200m^2, within 165m of complex center)
+        if (!m || m.areaM2 < 200 || m.distM > 165) return;
+        raw.push(m);
       });
 
-      if (candidates.length === 0) return null;
+      if (raw.length === 0) return null;
 
-      // Pick the closest N real apartment buildings (e.g. exact 6 buildings of 더샵 2단지!)
-      candidates.sort((a, b) => a.distM - b.distM);
-      const picked = candidates.slice(0, Math.min(candidates.length, bKeys.length));
+      // Deduplicate buildings split across vector tiles: keep the largest polygon within 22m
+      raw.sort((a, b) => b.areaM2 - a.areaM2);
+      const mLat = 111320, mLng = 111320 * Math.cos(origLat * Math.PI / 180);
+      const unique = [];
+      raw.forEach(cand => {
+        const dup = unique.some(u => Math.hypot((u.lng - cand.lng) * mLng, (u.lat - cand.lat) * mLat) < 22);
+        if (!dup) unique.push(cand);
+      });
+
+      // Pick the closest N distinct real silhouettes (N = number of dongs in this complex, e.g. 6 for 2단지)
+      unique.sort((a, b) => a.distM - b.distM);
+      const picked = unique.slice(0, Math.min(unique.length, bKeys.length));
 
       // Sort spatially: South row (West->East: 201, 202, 203), then North row (West->East: 204, 205, 206)
       const sortedByLat = [...picked].sort((a, b) => a.lat - b.lat);
@@ -3705,198 +3675,175 @@
 
       const result = {};
       bKeys.forEach((dk, idx) => {
-        result[dk] = ordered[idx % ordered.length];
+        if (ordered[idx]) result[dk] = ordered[idx];
       });
       return result;
     }
 
-    function rebuildThreeComplexMeshes() {
-      if (!locMap.worldGroup) return;
-      while (locMap.worldGroup.children.length > 0) {
-        locMap.worldGroup.remove(locMap.worldGroup.children[0]);
+    function ensureSilhouetteLayers() {
+      const map = locMap.map;
+      if (!map || !map.isStyleLoaded()) return;
+
+      // Soften generic gray surrounding buildings slightly so the complex silhouettes pop cleanly
+      try {
+        if (map.getLayer("building-3d")) {
+          map.setPaintProperty("building-3d", "fill-extrusion-opacity", 0.55);
+        }
+      } catch (e) {}
+
+      // 1. Unselected Dongs in the active complex (crisp bright white-slate on their EXACT real silhouettes!)
+      if (!map.getSource("cx-dongs-other")) {
+        map.addSource("cx-dongs-other", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer({
+          id: "cx-dongs-other-layer",
+          type: "fill-extrusion",
+          source: "cx-dongs-other",
+          paint: {
+            "fill-extrusion-color": "#f1f5f9",
+            "fill-extrusion-height": ["get", "height"],
+            "fill-extrusion-base": 0,
+            "fill-extrusion-opacity": 0.94
+          }
+        });
       }
+
+      // 2. Selected Dong (crisp sky-blue tinted tower on its EXACT real silhouette!)
+      if (!map.getSource("cx-dong-selected")) {
+        map.addSource("cx-dong-selected", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer({
+          id: "cx-dong-selected-layer",
+          type: "fill-extrusion",
+          source: "cx-dong-selected",
+          paint: {
+            "fill-extrusion-color": "#bfdbfe",
+            "fill-extrusion-height": ["get", "height"],
+            "fill-extrusion-base": 0,
+            "fill-extrusion-opacity": 0.96
+          }
+        });
+      }
+
+      // 3. Selected Floor Band (vivid BLUE extruded directly on the EXACT real silhouette shape at the exact floor height!)
+      if (!map.getSource("cx-unit-floor-band")) {
+        map.addSource("cx-unit-floor-band", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer({
+          id: "cx-unit-floor-band-layer",
+          type: "fill-extrusion",
+          source: "cx-unit-floor-band",
+          paint: {
+            "fill-extrusion-color": "#2563eb",
+            "fill-extrusion-height": ["get", "top"],
+            "fill-extrusion-base": ["get", "base"],
+            "fill-extrusion-opacity": 0.99
+          }
+        });
+      }
+    }
+
+    function rebuildThreeComplexMeshes() {
+      const map = locMap.map;
+      if (!map || !map.isStyleLoaded()) return;
+      ensureSilhouetteLayers();
       clearDongMarkers();
 
       const cx = getActiveComplex();
       const bKeys = Object.keys(cx.buildings);
       const selDong = cx.buildings[state.selectedDong] ? state.selectedDong : bKeys[0];
       const floor = Math.max(1, Math.min(cx.buildings[selDong].maxFloor, Math.floor(state.selectedHo / 100) || 10));
-      const line = Math.max(1, Math.min(4, (state.selectedHo % 100) || 1));
-      const priceText = state.askingPrice ? `${Number(state.askingPrice).toFixed(2).replace(/\.00$/, '')}억` : (cx.recentTxLabel || "");
-
       const [origLng, origLat] = locMap.originLngLat;
-      const mPerDegLat = 111320;
-      const mPerDegLng = 111320 * Math.cos(origLat * Math.PI / 180);
 
-      // Extract exact real building footprints from the live map!
       if (!locMap.realFootprintCache) locMap.realFootprintCache = {};
       let exactMap = locMap.realFootprintCache[cx.id];
-      if (!exactMap) {
-        exactMap = extractExactDongFootprints(cx, origLng, origLat);
-        if (exactMap) locMap.realFootprintCache[cx.id] = exactMap;
+      if (!exactMap || Object.keys(exactMap).length < Math.min(4, bKeys.length)) {
+        const fresh = extractExactDongFootprints(cx, origLng, origLat);
+        if (fresh && Object.keys(fresh).length >= (exactMap ? Object.keys(exactMap).length : 0)) {
+          exactMap = fresh;
+          locMap.realFootprintCache[cx.id] = exactMap;
+        }
       }
 
-      const fallbackLayout = COMPLEX_3D_LAYOUTS[cx.id] || null;
+      const otherFeatures = [];
+      const selDongFeatures = [];
+      const unitBandFeatures = [];
 
-      // Render EVERY Dong directly onto its EXACT real-world building footprint (1 Three.js unit = 1 real meter!)
-      bKeys.forEach((dk, idx) => {
-        const b = cx.buildings[dk];
-        const isSel = dk === selDong;
-
-        let bx, bz, bw, bd, rotY, bLng, bLat;
-        if (exactMap && exactMap[dk]) {
+      if (exactMap) {
+        bKeys.forEach(dk => {
           const fm = exactMap[dk];
-          bx = fm.relX;
-          bz = fm.relZ;
-          bw = fm.lengthM + 1.2; // Wrap cleanly around the underlying gray map polygon with zero z-fighting!
-          bd = fm.depthM + 1.2;
-          rotY = fm.rotY;
-          bLng = fm.lng;
-          bLat = fm.lat;
-        } else {
-          // Temporary fallback only while vector tiles are still streaming in
-          let fx, fz, frot = 0.3;
-          if (fallbackLayout && fallbackLayout.dongs[dk]) {
-            fx = fallbackLayout.dongs[dk].x * 2.5;
-            fz = fallbackLayout.dongs[dk].z * 2.5;
-            frot = fallbackLayout.dongs[dk].rotY;
+          if (!fm) return;
+          const b = cx.buildings[dk];
+          const isSel = dk === selDong;
+          const totalH = Math.max(45, (b.maxFloor || 27) * 3.0);
+
+          if (isSel) {
+            // Render lower part (0 .. floor-1) and upper part (floor .. top) in light blue,
+            // and the exact selected floor band in vivid BLUE directly on the real silhouette!
+            const bandBase = Math.max(0, (floor - 1) * 3.0);
+            const bandTop = Math.min(totalH, bandBase + 4.2);
+
+            selDongFeatures.push({
+              type: "Feature",
+              geometry: { type: "Polygon", coordinates: fm.poly },
+              properties: { height: totalH }
+            });
+            // Slightly outset silhouette ring by ~0.5m around centroid so the blue floor band wraps cleanly outside with zero z-fighting!
+            const outsetRing = fm.poly[0].map(([x, y]) => [
+              fm.lng + (x - fm.lng) * 1.045,
+              fm.lat + (y - fm.lat) * 1.045
+            ]);
+            unitBandFeatures.push({
+              type: "Feature",
+              geometry: { type: "Polygon", coordinates: [outsetRing] },
+              properties: { base: bandBase, top: bandTop }
+            });
+
+            locMap.selectedUnitLngLat = [fm.lng, fm.lat];
           } else {
-            const cols = Math.min(3, Math.ceil(Math.sqrt(bKeys.length)));
-            fx = ((idx % cols) - (cols - 1) / 2) * 40;
-            fz = (Math.floor(idx / cols) - 0.5) * 45;
+            otherFeatures.push({
+              type: "Feature",
+              geometry: { type: "Polygon", coordinates: fm.poly },
+              properties: { height: totalH }
+            });
           }
-          bx = fx; bz = fz; bw = 34; bd = 14; rotY = frot;
-          bLng = origLng + bx / mPerDegLng;
-          bLat = origLat - bz / mPerDegLat;
-        }
 
-        // Exact real-world apartment height (2.95m per floor -> 29F = 85.5m, cleanly covering OpenFreeMap's generic gray height!)
-        const bh = Math.max(42, (b.maxFloor || 27) * 2.95);
-
-        const facadeTex = createApartmentFacadeTexture(b.name, b.maxFloor, isSel, floor, line, priceText);
-        const sideMat = new THREE.MeshLambertMaterial({ color: isSel ? 0xf8fafc : 0xe2e8f0, side: THREE.DoubleSide });
-        const roofMat = new THREE.MeshLambertMaterial({ color: isSel ? 0xdbeafe : 0xf1f5f9, side: THREE.DoubleSide });
-        const frontMat = new THREE.MeshLambertMaterial({ map: facadeTex, side: THREE.DoubleSide });
-
-        const tower = new THREE.Mesh(
-          new THREE.BoxGeometry(bw, bh, bd),
-          [sideMat, sideMat, roofMat, sideMat, frontMat, frontMat]
-        );
-        tower.position.set(bx, bh / 2, bz);
-        tower.rotation.y = rotY;
-        locMap.worldGroup.add(tower);
-
-        // Rooftop elevator penthouse
-        const core = new THREE.Mesh(
-          new THREE.BoxGeometry(bw * 0.34, 3.6, bd * 0.58),
-          new THREE.MeshLambertMaterial({ color: 0xe2e8f0, side: THREE.DoubleSide })
-        );
-        core.position.set(bx, bh + 1.8, bz);
-        core.rotation.y = rotY;
-        locMap.worldGroup.add(core);
-
-        // Compact floating roof marker at each building's exact real GPS coordinate
-        if (locMap.map) {
+          // Floating roof badge right on top of each real silhouette!
           const badgeEl = document.createElement("div");
           badgeEl.className = "pointer-events-none flex flex-col items-center";
           badgeEl.innerHTML = isSel
-            ? `<div class="px-2 py-0.5 rounded-lg bg-blue-600 text-white text-[11px] font-extrabold shadow-lg border border-white whitespace-nowrap">${b.name} ${state.selectedHo}호</div>`
-            : `<div class="px-1.5 py-0.5 rounded-md bg-slate-900/80 text-white text-[10px] font-bold shadow border border-white/25 whitespace-nowrap">${b.name}</div>`;
+            ? `<div class="px-2 py-0.5 rounded-lg bg-blue-600 text-white text-[11px] font-extrabold shadow-lg border-2 border-white whitespace-nowrap">${b.name} ${state.selectedHo}호 (${floor}F)</div>`
+            : `<div class="px-1.5 py-0.5 rounded-md bg-slate-900/85 text-white text-[10px] font-bold shadow border border-white/25 whitespace-nowrap">${b.name} <span class="text-slate-300 font-normal">${b.maxFloor}F</span></div>`;
           const mk = new maplibregl.Marker({ element: badgeEl, anchor: "bottom" })
-            .setLngLat([bLng, bLat])
-            .addTo(locMap.map);
+            .setLngLat([fm.lng, fm.lat])
+            .addTo(map);
           locMap.dongMarkers.push(mk);
-        }
-
-        if (isSel) {
-          locMap.selectedUnitLngLat = [bLng, bLat];
-          locMap.selectedDongRotDeg = Math.round((-rotY * 180) / Math.PI);
-        }
-      });
-
-      const statusEl = document.getElementById("loc-geocode-status");
-      if (statusEl) {
-        statusEl.textContent = exactMap
-          ? `${cx.shortName} 실제 ${Object.keys(exactMap).length}개 동 외곽선 1:1 매칭 완료`
-          : `${cx.shortName} ${cx.buildings[selDong].name} ${state.selectedHo}호 3D 로딩 중...`;
+        });
       }
 
-      if (locMap.map) locMap.map.triggerRepaint();
-    }
+      if (map.getSource("cx-dongs-other")) {
+        map.getSource("cx-dongs-other").setData({ type: "FeatureCollection", features: otherFeatures });
+      }
+      if (map.getSource("cx-dong-selected")) {
+        map.getSource("cx-dong-selected").setData({ type: "FeatureCollection", features: selDongFeatures });
+      }
+      if (map.getSource("cx-unit-floor-band")) {
+        map.getSource("cx-unit-floor-band").setData({ type: "FeatureCollection", features: unitBandFeatures });
+      }
 
-    function createThreeCustomLayer() {
-      return {
-        id: locMap.customLayerId,
-        type: "custom",
-        renderingMode: "3d",
-        onAdd: function (map, gl) {
-          locMap.threeCamera = new THREE.Camera();
-          locMap.threeScene = new THREE.Scene();
-
-          const hemi = new THREE.HemisphereLight(0xffffff, 0xcbd5e1, 0.96);
-          locMap.threeScene.add(hemi);
-          const dir1 = new THREE.DirectionalLight(0xfffbeb, 0.72);
-          dir1.position.set(40, 80, 50).normalize();
-          locMap.threeScene.add(dir1);
-          const dir2 = new THREE.DirectionalLight(0xe0f2fe, 0.45);
-          dir2.position.set(-40, 60, -50).normalize();
-          locMap.threeScene.add(dir2);
-
-          locMap.worldGroup = new THREE.Group();
-          locMap.threeScene.add(locMap.worldGroup);
-
-          locMap.threeRenderer = new THREE.WebGLRenderer({
-            canvas: map.getCanvas(),
-            context: gl,
-            antialias: true
-          });
-          locMap.threeRenderer.autoClear = false;
-
-          rebuildThreeComplexMeshes();
-        },
-        render: function (gl, matrix) {
-          if (!locMap.threeRenderer || !locMap.threeScene || !locMap.threeCamera) return;
-          const mc = maplibregl.MercatorCoordinate.fromLngLat(locMap.originLngLat, 0);
-          const s = mc.meterInMercatorCoordinateUnits(); // Exact 1 Three.js unit = 1 real meter!
-          const rotX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
-
-          const m = new THREE.Matrix4().fromArray(matrix);
-          const l = new THREE.Matrix4()
-            .makeTranslation(mc.x, mc.y, mc.z)
-            .scale(new THREE.Vector3(s, -s, s))
-            .multiply(rotX);
-
-          locMap.threeCamera.projectionMatrix = m.multiply(l);
-          locMap.threeRenderer.resetState();
-          locMap.threeRenderer.render(locMap.threeScene, locMap.threeCamera);
-        }
-      };
+      const matchedCount = exactMap ? Object.keys(exactMap).length : 0;
+      const statusEl = document.getElementById("loc-geocode-status");
+      if (statusEl) {
+        statusEl.textContent = matchedCount > 0
+          ? `${cx.shortName} 실제 ${matchedCount}개 동 실루엣 직접 표시 완료`
+          : `${cx.shortName} 실제 건물 실루엣 불러오는 중...`;
+      }
     }
 
     function attachThreeLayerIfReady() {
       const map = locMap.map;
       if (!map || !map.isStyleLoaded()) return;
-      try {
-        if (map.getLayer("building-3d")) {
-          map.setPaintProperty("building-3d", "fill-extrusion-opacity", 0.55);
-        }
-      } catch (e) {}
-      if (!map.getLayer(locMap.customLayerId)) {
-        map.addLayer(createThreeCustomLayer());
-      } else {
-        rebuildThreeComplexMeshes();
-      }
-      // Once vector tiles finish streaming in, snap 1:1 onto the exact real OSM building footprints!
+      ensureSilhouetteLayers();
+      rebuildThreeComplexMeshes();
       map.once("idle", () => {
-        const cx = getActiveComplex();
-        if (!locMap.realFootprintCache) locMap.realFootprintCache = {};
-        if (!locMap.realFootprintCache[cx.id]) {
-          const exact = extractExactDongFootprints(cx, locMap.originLngLat[0], locMap.originLngLat[1]);
-          if (exact) {
-            locMap.realFootprintCache[cx.id] = exact;
-            rebuildThreeComplexMeshes();
-          }
-        }
+        rebuildThreeComplexMeshes();
       });
     }
 
@@ -3905,7 +3852,7 @@
       if (!container || typeof maplibregl === "undefined" || typeof THREE === "undefined" || locMap.map) return;
 
       const cx = getActiveComplex();
-      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.6993, lat: 35.2094 };
+      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.6991, lat: 35.2088 };
       locMap.originLngLat = [coord.lng, coord.lat];
 
       container.innerHTML = "";
