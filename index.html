@@ -440,8 +440,11 @@
               </div>
             </div>
 
-            <!-- Zoom Buttons Overlay -->
-            <div class="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
+            <!-- Zoom & Drag Mode Overlay -->
+            <div class="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+              <button id="btn-loc-drag-mode" type="button" class="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-bold shadow-md border border-blue-500 transition">
+                손가락: 360° 회전
+              </button>
               <button id="btn-loc-zoom-in" type="button" aria-label="확대" class="w-8 h-8 rounded-lg bg-white/95 hover:bg-white text-slate-800 font-bold text-base shadow-md border border-slate-200 flex items-center justify-center">+</button>
               <button id="btn-loc-zoom-out" type="button" aria-label="축소" class="w-8 h-8 rounded-lg bg-white/95 hover:bg-white text-slate-800 font-bold text-base shadow-md border border-slate-200 flex items-center justify-center">−</button>
             </div>
@@ -453,7 +456,7 @@
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block"></span>선택 동 3D</span>
                 <span id="loc-geocode-status" class="text-[10px] text-emerald-300 font-semibold">실제 OpenStreetMap 3D 지도 연동</span>
               </div>
-              <span class="text-[10px] text-slate-300">우클릭·두손가락: 회전/기울기 · 클릭: 동 위치 지정</span>
+              <span class="text-[10px] text-slate-300">드래그: 화면 회전/이동 (매물 위치 고정) · 핀치/휠: 확대·축소</span>
             </div>
           </div>
         </div>
@@ -3382,17 +3385,42 @@
       marker: null,
       styleMode: "vector", // "vector" | "satellite"
       viewMode: "3d",      // "3d" | "top"
-      currentLngLat: [128.6967207, 35.2096035], // Grounded Gaeum-dong default
+      dragMode: "rotate",  // "rotate" (1-finger orbit around fixed unit) | "pan" (map pan)
+      currentLngLat: [128.6952, 35.2098],
       currentPolygon: null,
       geoCache: {},
-      customPins: {},      // User-clicked exact pin overrides saved in localStorage
-      buildingPolygons: {} // Overpass real OSM building footprints by dong name
+      isOrbiting: false,
+      lastOrbitX: 0,
+      lastOrbitY: 0
     };
 
-    try {
-      const savedPins = localStorage.getItem("changwon_apt_custom_pins_v1");
-      if (savedPins) locMap.customPins = JSON.parse(savedPins);
-    } catch (e) {}
+    // Clear any old accidental custom pins from previous version
+    try { localStorage.removeItem("changwon_apt_custom_pins_v1"); } catch (e) {}
+
+    // Real relative [dLng, dLat] offsets per Dong within each Gaeum-dong complex (grounded from Naver Map & OSM layout)
+    const DONG_GEO_OFFSETS = {
+      "thesharp2": {
+        "201": [-0.00055, -0.00035],
+        "202": [ 0.00000, -0.00045],
+        "203": [ 0.00060, -0.00040],
+        "204": [-0.00045,  0.00035],
+        "205": [ 0.00010,  0.00040],
+        "206": [ 0.00065,  0.00030]
+      },
+      "thesharp1": {
+        "101": [-0.00045, -0.00025],
+        "102": [ 0.00015, -0.00030],
+        "103": [ 0.00055,  0.00015],
+        "104": [-0.00015,  0.00035]
+      },
+      "thesharp3": {
+        "301": [-0.00045, -0.00030],
+        "302": [ 0.00010, -0.00035],
+        "303": [ 0.00055,  0.00005],
+        "304": [-0.00035,  0.00030],
+        "305": [ 0.00025,  0.00035]
+      }
+    };
 
     // Grounded fallback coordinates & search queries for Changwon Gaeum-dong complexes
     const COMPLEX_GEO_HINTS = {
@@ -3639,55 +3667,53 @@
 
     async function geocodeComplexAndDong(cx, dongName) {
       const statusEl = document.getElementById("loc-geocode-status");
+      const dongKey = dongName.replace(/[^0-9]/g, "") || dongName;
       const pinKey = `${cx.id}__${dongName}`;
 
-      // 1. Check user custom clicked pin first
-      if (locMap.customPins[pinKey]) {
-        const p = locMap.customPins[pinKey];
-        if (statusEl) statusEl.textContent = `사용자 지정 실제 위치 (${dongName})`;
-        return { lng: p.lng, lat: p.lat, poly: p.poly || null };
-      }
-
-      // 2. Check session cache
       if (locMap.geoCache[pinKey]) {
-        if (statusEl) statusEl.textContent = `실제 지도 좌표 매칭 완료 (${dongName})`;
+        if (statusEl) statusEl.textContent = `실제 위치 고정 완료 (${dongName})`;
         return locMap.geoCache[pinKey];
       }
 
-      if (statusEl) statusEl.textContent = `실제 지도에서 ${cx.shortName} ${dongName} 위치 검색 중...`;
+      if (statusEl) statusEl.textContent = `실제 지도에서 ${cx.shortName} ${dongName} 위치 조회 중...`;
 
-      // 3. Try live OpenStreetMap Nominatim for exact dong, then complex, then address
-      const queries = [
-        `${cx.name} ${dongName}`,
-        `${cx.name} 창원`,
-        cx.address.replace(/\(.*?\)/g, "").trim()
-      ];
-
-      let found = null;
-      for (const q of queries) {
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=kr&q=${encodeURIComponent(q)}`;
-          const res = await fetch(url, { headers: { "Accept-Language": "ko" } });
-          if (res.ok) {
-            const arr = await res.json();
-            if (arr && arr.length > 0) {
-              found = { lng: parseFloat(arr[0].lon), lat: parseFloat(arr[0].lat), poly: null };
-              break;
+      // 1. Resolve complex center (use grounded hint for Gaeum-dong, else Nominatim)
+      let baseCenter = null;
+      if (COMPLEX_GEO_HINTS[cx.id]) {
+        baseCenter = { lng: COMPLEX_GEO_HINTS[cx.id].lng, lat: COMPLEX_GEO_HINTS[cx.id].lat };
+      } else {
+        const queries = [
+          `${cx.name} ${dongName}`,
+          `${cx.name} 창원`,
+          cx.address.replace(/\(.*?\)/g, "").trim()
+        ];
+        for (const q of queries) {
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=kr&q=${encodeURIComponent(q)}`;
+            const res = await fetch(url, { headers: { "Accept-Language": "ko" } });
+            if (res.ok) {
+              const arr = await res.json();
+              if (arr && arr.length > 0) {
+                baseCenter = { lng: parseFloat(arr[0].lon), lat: parseFloat(arr[0].lat) };
+                break;
+              }
             }
-          }
-        } catch (e) {}
+          } catch (e) {}
+        }
       }
+      if (!baseCenter) baseCenter = { lng: 128.6952, lat: 35.2098 };
 
-      if (!found) {
-        const hint = COMPLEX_GEO_HINTS[cx.id] || { lng: 128.6952, lat: 35.2098 };
-        found = { lng: hint.lng, lat: hint.lat, poly: null };
-      }
+      // Apply per-dong real layout offset if known
+      const dongOffsets = DONG_GEO_OFFSETS[cx.id];
+      const off = (dongOffsets && dongOffsets[dongKey]) ? dongOffsets[dongKey] : [0, 0];
+      let targetLng = baseCenter.lng + off[0];
+      let targetLat = baseCenter.lat + off[1];
+      let found = { lng: targetLng, lat: targetLat, poly: null };
 
-      // 4. Query Overpass API around complex center to find the EXACT OSM building footprint matching dongName (e.g., "202동")!
+      // 2. Query Overpass API to match exact OSM building name ("202동") OR snap to the closest real OSM apartment building!
       try {
         const cleanDong = dongName.replace(/\s+/g, "");
-        const numOnly = dongName.replace(/[^0-9]/g, "");
-        const ovQuery = `[out:json][timeout:6];(way["building"](around:260,${found.lat},${found.lng}););out body;>;out skel qt;`;
+        const ovQuery = `[out:json][timeout:6];(way["building"](around:260,${baseCenter.lat},${baseCenter.lng}););out body;>;out skel qt;`;
         const ovRes = await fetch("https://overpass-api.de/api/interpreter", {
           method: "POST",
           body: "data=" + encodeURIComponent(ovQuery)
@@ -3699,25 +3725,41 @@
             if (el.type === "node") nodes[el.id] = [el.lon, el.lat];
           });
           const ways = (ovData.elements || []).filter(el => el.type === "way" && el.nodes && el.nodes.length >= 4);
-          const matchWay = ways.find(w => {
+
+          // First try exact dong name match in OSM tags
+          let bestWay = ways.find(w => {
             const tags = w.tags || {};
             const nm = (tags.name || tags["name:ko"] || tags["addr:housename"] || tags.ref || "").replace(/\s+/g, "");
-            return nm && (nm === cleanDong || nm.endsWith(cleanDong) || (numOnly && nm === numOnly));
+            return nm && (nm === cleanDong || nm.endsWith(cleanDong) || (dongKey && nm === dongKey));
           });
-          if (matchWay) {
-            const ring = matchWay.nodes.map(nid => nodes[nid]).filter(Boolean);
+
+          // Fallback: snap to the nearest real OSM building polygon to our target dong coordinate
+          if (!bestWay && ways.length > 0) {
+            let minD = Infinity;
+            ways.forEach(w => {
+              const ring = w.nodes.map(nid => nodes[nid]).filter(Boolean);
+              if (ring.length < 4) return;
+              const cxLng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+              const cxLat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+              const d = Math.hypot(cxLng - targetLng, cxLat - targetLat);
+              if (d < minD) { minD = d; bestWay = w; }
+            });
+          }
+
+          if (bestWay) {
+            const ring = bestWay.nodes.map(nid => nodes[nid]).filter(Boolean);
             if (ring.length >= 4) {
               const cxLng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
               const cxLat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
               found = { lng: cxLng, lat: cxLat, poly: [ring] };
-              if (statusEl) statusEl.textContent = `실제 건물 외곽선 매칭 완료 (${dongName})`;
+              if (statusEl) statusEl.textContent = `실제 건물 위치 고정 완료 (${dongName})`;
             }
           } else if (statusEl) {
-            statusEl.textContent = `단지 실제 위치 표시 · 지도의 실제 ${dongName} 건물을 클릭해 정확히 고정할 수 있어요`;
+            statusEl.textContent = `실제 단지 위치 고정 완료 (${dongName})`;
           }
         }
       } catch (e) {
-        if (statusEl) statusEl.textContent = `실제 지도 표시 완료 · 지도의 실제 ${dongName} 건물을 클릭해 고정 가능`;
+        if (statusEl) statusEl.textContent = `실제 단지 위치 고정 완료 (${dongName})`;
       }
 
       locMap.geoCache[pinKey] = found;
@@ -3753,41 +3795,30 @@
       map.on("rotate", syncLocCompassUI);
       map.on("pitch", syncLocCompassUI);
 
-      // Allow clicking on any real building on the map to pin the selected Dong precisely!
-      map.on("click", e => {
-        const cx = getActiveComplex();
-        const b = cx.buildings[state.selectedDong];
-        if (!b) return;
-        const lng = e.lngLat.lng;
-        const lat = e.lngLat.lat;
-        const pinKey = `${cx.id}__${b.name}`;
-
-        // Try to grab clicked real vector building geometry if available
-        let clickedPoly = null;
-        try {
-          const feats = map.queryRenderedFeatures(e.point).filter(f =>
-            (f.sourceLayer === "building" || (f.layer && f.layer.id && f.layer.id.includes("building"))) &&
-            f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
-          );
-          if (feats.length > 0) {
-            clickedPoly = feats[0].geometry.type === "Polygon"
-              ? feats[0].geometry.coordinates
-              : feats[0].geometry.coordinates[0];
-          }
-        } catch (err) {}
-
-        locMap.currentLngLat = [lng, lat];
-        locMap.currentPolygon = clickedPoly;
-        locMap.customPins[pinKey] = { lng, lat, poly: clickedPoly };
-        try {
-          localStorage.setItem("changwon_apt_custom_pins_v1", JSON.stringify(locMap.customPins));
-        } catch (err) {}
-
-        updateHighlightOverlay(lng, lat, clickedPoly);
-        const statusEl = document.getElementById("loc-geocode-status");
-        if (statusEl) statusEl.textContent = `${b.name} 실제 건물 위치 고정 완료`;
-        showToast(`${cx.shortName} ${b.name} 위치를 클릭한 실제 건물로 고정했습니다.`);
+      // Default 1-finger / left-drag rotates & tilts camera around the fixed building (pin NEVER moves on click!)
+      map.dragPan.disable();
+      const canvasEl = map.getCanvas();
+      canvasEl.addEventListener("pointerdown", e => {
+        if (locMap.dragMode !== "rotate") return;
+        if (e.pointerType === "touch" && !e.isPrimary) return;
+        locMap.isOrbiting = true;
+        locMap.lastOrbitX = e.clientX;
+        locMap.lastOrbitY = e.clientY;
       });
+      window.addEventListener("pointermove", e => {
+        if (!locMap.isOrbiting || locMap.dragMode !== "rotate") return;
+        const dx = e.clientX - locMap.lastOrbitX;
+        const dy = e.clientY - locMap.lastOrbitY;
+        locMap.lastOrbitX = e.clientX;
+        locMap.lastOrbitY = e.clientY;
+        map.jumpTo({
+          bearing: map.getBearing() - dx * 0.45,
+          pitch: Math.max(0, Math.min(72, map.getPitch() - dy * 0.35))
+        });
+      });
+      const stopOrbit = () => { locMap.isOrbiting = false; };
+      window.addEventListener("pointerup", stopOrbit);
+      window.addEventListener("pointercancel", stopOrbit);
 
       locMap.map = map;
     }
@@ -3842,7 +3873,7 @@
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">층수 구간</span><span class="font-semibold text-blue-700">${floor}층 / 최고 ${b.maxFloor}층 · ${tier}</span></div>
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">라인 · 향</span><span class="font-semibold text-amber-700">${line}호라인 (${lineInfo.type}) · ${lineInfo.dir}</span></div>
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">세대당 주차</span><span class="font-bold text-emerald-700">${cx.parking || "미등록"}</span></div>
-        <p class="text-[11px] text-slate-500 pt-1">주황색 3D 층 표시와 부채꼴이 실제 지도 위 ${b.name} ${floor}층의 ${lineInfo.dir} 조망 방향을 나타냅니다. 지도 위 실제 동 건물을 클릭하면 위치가 즉시 고정됩니다.</p>
+        <p class="text-[11px] text-slate-500 pt-1">주황색 3D 층 표시와 부채꼴이 실제 지도 위 ${b.name} ${floor}층의 ${lineInfo.dir} 조망 방향을 나타냅니다. 지도를 터치·드래그해도 매물 위치는 고정된 채 화면 각도만 자유롭게 회전합니다.</p>
       `;
 
       // Surroundings List
@@ -3956,6 +3987,23 @@
       btnZoomOut.addEventListener("click", () => {
         if (locMap.map) locMap.map.zoomOut({ duration: 250 });
       });
+
+      const btnDragMode = document.getElementById("btn-loc-drag-mode");
+      if (btnDragMode) {
+        btnDragMode.addEventListener("click", () => {
+          if (locMap.dragMode === "rotate") {
+            locMap.dragMode = "pan";
+            if (locMap.map) locMap.map.dragPan.enable();
+            btnDragMode.textContent = "손가락: 지도 이동";
+            btnDragMode.className = "px-2.5 py-1.5 rounded-lg bg-white/95 text-slate-800 text-[11px] font-bold shadow-md border border-slate-300 transition";
+          } else {
+            locMap.dragMode = "rotate";
+            if (locMap.map) locMap.map.dragPan.disable();
+            btnDragMode.textContent = "손가락: 360° 회전";
+            btnDragMode.className = "px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-bold shadow-md border border-blue-500 transition";
+          }
+        });
+      }
 
       fSel.addEventListener("change", () => {
         const f = parseInt(fSel.value, 10) || 10;
