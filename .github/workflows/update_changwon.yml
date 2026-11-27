@@ -1,0 +1,35 @@
+name: Update Changwon Seongsan & Uichang Apartments
+
+on:
+  schedule:
+    # 매일 한국시간 오전 6시 (UTC 21:00) 자동 실행
+    - cron: '0 21 * * *'
+  workflow_dispatch: # GitHub에서 수동 즉시 실행 버튼 활성화
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch Seongsan-gu & Uichang-gu Real Transaction Data
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: python3 scripts/fetch_changwon_api.py
+
+      - name: Commit updated data (triggers Cloudflare Pages auto-deploy)
+        run: |
+          git config user.name "changwon-apt-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/changwon_live.json
+          git diff --staged --quiet || git commit -m "chore: update Seongsan/Uichang apt data ($(date +'%Y-%m-%d'))"
+          git push
