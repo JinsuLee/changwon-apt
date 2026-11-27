@@ -24,7 +24,7 @@ jobs:
       - name: Fetch Seongsan-gu & Uichang-gu Real Transaction Data
         env:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
-        run: python3 scripts/fetch_changwon_api.py
+        run: python3 fetch_changwon_api.py
 
       - name: Commit updated data (triggers Cloudflare Pages auto-deploy)
         run: |
