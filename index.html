@@ -3394,16 +3394,16 @@
       threeCamera: null,
       threeRenderer: null,
       worldGroup: null,
-      originLngLat: [128.6981, 35.2106],
-      selectedUnitLngLat: [128.6981, 35.2106],
+      originLngLat: [128.6993, 35.2094],
+      selectedUnitLngLat: [128.6993, 35.2094],
       selectedDongRotDeg: 0,
       customLayerId: "threejs-complex-3d"
     };
 
-    // Corrected real-world GPS coordinates (East of 가음정천, North of 가음정지구대, West of 대정사거리)
+    // Exact GPS coordinates aligned directly to the OpenFreeMap Changwon Gaeum-dong complex labels
     const CORRECTED_REAL_COORDS = {
-      "thesharp1": { lng: 128.6992, lat: 35.2118 },
-      "thesharp2": { lng: 128.6981, lat: 35.2106 },
+      "thesharp1": { lng: 128.7011, lat: 35.2084 },
+      "thesharp2": { lng: 128.6993, lat: 35.2094 },
       "thesharp3": { lng: 128.6967, lat: 35.2096 },
       "hanhwa":    { lng: 128.6950, lat: 35.2106 },
       "prugio":    { lng: 128.6922, lat: 35.2082 },
@@ -3414,12 +3414,12 @@
     const COMPLEX_3D_LAYOUTS = {
       "thesharp2": {
         dongs: {
-          "201": { x: -16, z: 9,   rotY: -0.22 },
-          "202": { x: -1,  z: 14,  rotY: -0.18 },
-          "203": { x: 14,  z: 11,  rotY: -0.20 },
-          "204": { x: -12, z: -10, rotY: -0.20 },
-          "205": { x: 2,   z: -8,  rotY: -0.18 },
-          "206": { x: 16,  z: -6,  rotY: -0.16 }
+          "201": { x: -17, z: 6,   rotY: 0.42 },
+          "202": { x: -2,  z: 14,  rotY: 0.30 },
+          "203": { x: 15,  z: 10,  rotY: 0.26 },
+          "204": { x: -12, z: -12, rotY: 0.40 },
+          "205": { x: 3,   z: -10, rotY: 0.30 },
+          "206": { x: 17,  z: -5,  rotY: 0.24 }
         }
       },
       "thesharp1": {
@@ -3613,37 +3613,14 @@
       const mPerDegLat = 111320;
       const mPerDegLng = 111320 * Math.cos(origLat * Math.PI / 180);
 
-      // 1. Landscaped Green Complex Ground Pad + Walkways sitting flush on the real map!
+      // 1. Subtle landscaped garden tint inside the complex center (does not cover surrounding real roads!)
       const lawn = new THREE.Mesh(
-        new THREE.BoxGeometry(46, 0.35, 40),
-        new THREE.MeshLambertMaterial({ color: 0x4ea832, side: THREE.DoubleSide })
+        new THREE.CircleGeometry(24, 32),
+        new THREE.MeshLambertMaterial({ color: 0x4ade80, transparent: true, opacity: 0.26, side: THREE.DoubleSide })
       );
-      lawn.position.set(0, 0.2, 1);
+      lawn.rotation.x = -Math.PI / 2;
+      lawn.position.set(0, 0.15, 1);
       locMap.worldGroup.add(lawn);
-
-      const walkMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc, side: THREE.DoubleSide });
-      const w1 = new THREE.Mesh(new THREE.BoxGeometry(42, 0.42, 2.2), walkMat); w1.position.set(0, 0.24, 1);
-      const w2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.42, 36), walkMat); w2.position.set(-6, 0.24, 1);
-      const w3 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.42, 36), walkMat); w3.position.set(7, 0.24, 1);
-      locMap.worldGroup.add(w1, w2, w3);
-
-      const play = new THREE.Mesh(
-        new THREE.CylinderGeometry(3.0, 3.0, 0.46, 20),
-        new THREE.MeshLambertMaterial({ color: 0xfbbf24, side: THREE.DoubleSide })
-      );
-      play.position.set(0, 0.26, 1);
-      locMap.worldGroup.add(play);
-
-      // Decorative Trees inside complex lawn
-      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f, side: THREE.DoubleSide });
-      const leafMat = new THREE.MeshLambertMaterial({ color: 0x15803d, side: THREE.DoubleSide });
-      [[-20, -15], [-20, 15], [20, -15], [20, 15], [-5, 1], [6, 1]].forEach(([tx, tz]) => {
-        const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 1.4, 6), trunkMat);
-        tr.position.set(tx, 1.0, tz);
-        const lf = new THREE.Mesh(new THREE.SphereGeometry(1.3, 8, 8), leafMat);
-        lf.position.set(tx, 2.5, tz);
-        locMap.worldGroup.add(tr, lf);
-      });
 
       // 2. Render EVERY Dong of the selected complex in crisp Zigbang/Hogangnono architectural 3D!
       bKeys.forEach((dk, idx) => {
@@ -3769,6 +3746,12 @@
     function attachThreeLayerIfReady() {
       const map = locMap.map;
       if (!map || !map.isStyleLoaded()) return;
+      // Soften generic gray surrounding 3D buildings slightly so the active complex's detailed towers stand out cleanly
+      try {
+        if (map.getLayer("building-3d")) {
+          map.setPaintProperty("building-3d", "fill-extrusion-opacity", 0.55);
+        }
+      } catch (e) {}
       if (!map.getLayer(locMap.customLayerId)) {
         map.addLayer(createThreeCustomLayer());
       } else {
@@ -3781,7 +3764,7 @@
       if (!container || typeof maplibregl === "undefined" || typeof THREE === "undefined" || locMap.map) return;
 
       const cx = getActiveComplex();
-      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.6981, lat: 35.2106 };
+      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.6993, lat: 35.2094 };
       locMap.originLngLat = [coord.lng, coord.lat];
 
       container.innerHTML = "";
