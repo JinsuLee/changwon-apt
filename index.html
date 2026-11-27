@@ -3394,20 +3394,20 @@
       threeCamera: null,
       threeRenderer: null,
       worldGroup: null,
-      originLngLat: [128.6991, 35.2088],
-      selectedUnitLngLat: [128.6991, 35.2088],
+      originLngLat: [128.69861, 35.20932],
+      selectedUnitLngLat: [128.69861, 35.20932],
       selectedDongRotDeg: 0,
       customLayerId: "threejs-complex-3d"
     };
 
     // Exact GPS coordinates aligned directly to the OpenFreeMap Changwon Gaeum-dong complex labels
     const CORRECTED_REAL_COORDS = {
-      "thesharp1": { lng: 128.7011, lat: 35.2084 },
-      "thesharp2": { lng: 128.6991, lat: 35.2088 },
-      "thesharp3": { lng: 128.6967, lat: 35.2096 },
-      "hanhwa":    { lng: 128.6950, lat: 35.2106 },
-      "prugio":    { lng: 128.6922, lat: 35.2082 },
-      "xi":        { lng: 128.6942, lat: 35.2098 }
+      "thesharp1": { lng: 128.70015, lat: 35.20823 },
+      "thesharp2": { lng: 128.69861, lat: 35.20932 },
+      "thesharp3": { lng: 128.69700, lat: 35.21030 },
+      "hanhwa":    { lng: 128.6950,  lat: 35.2106  },
+      "prugio":    { lng: 128.6922,  lat: 35.2082  },
+      "xi":        { lng: 128.6942,  lat: 35.2098  }
     };
 
     // Exact building footprint arrangement matching Naver Map (1 Three.js unit = 2.5m; +X=East, +Z=South, -Z=North)
@@ -3443,21 +3443,21 @@
 
     const GAEUM_INFO_PRESETS = {
       "thesharp2": [
-        { tag: "북측", name: "더샵 1단지 · 원이대로", desc: "바로 북측에 1단지(101~104동)와 원이대로 인접" },
-        { tag: "서측", name: "가음정천 · 남방2호교 · 장미공원", desc: "201·204동 서측으로 하천 산책로와 개방감 우수" },
-        { tag: "동측", name: "대정로 · 대정사거리", desc: "203·206동 동측 대정로 및 주출입구·상권 접근 편리" },
-        { tag: "남측", name: "가음정지구대 · 더샵 3단지", desc: "201·202·203동 남향·남서향 채광 우수" }
+        { tag: "북서측", name: "더샵 3단지 · 원이대로", desc: "북서측으로 3단지(301~305동)와 원이대로·성산구 핵심 간선도로 인접" },
+        { tag: "남동측", name: "더샵 1단지 · 대정로", desc: "대정로 건너 남동측에 1단지(101~104동)와 대단지 브랜드 타운 형성" },
+        { tag: "남서측", name: "가음정지구대 · 우체국 · 가음정시장", desc: "도보권 관공서·전통시장·생활 상권 접근성 우수" },
+        { tag: "동측", name: "가음정로 · 대방천 · 학군", desc: "동측 가음정로·대방천 산책로 및 성주초·남산중 통학권 인접" }
       ],
       "thesharp1": [
-        { tag: "북측", name: "원이대로 (바로 인접)", desc: "성산구 핵심 도로 진입 및 상남동·용호동 접근성 우수" },
-        { tag: "서측", name: "가음정천 · 남정초등학교", desc: "도보 통학 편리 및 쾌적한 주거 블록" },
-        { tag: "남측", name: "더샵 2단지", desc: "대단지 브랜드 타운 생활권 공유" },
-        { tag: "동측", name: "대정로", desc: "대정사거리 대중교통 및 근린상가 인접" }
+        { tag: "북서측", name: "더샵 2단지 · 대정로", desc: "대정로 맞은편 북서측 2단지와 대단지 브랜드 타운 생활권 공유" },
+        { tag: "서측", name: "가음정지구대 · 가음정시장", desc: "관공서·우체국·전통시장 도보 이용 편리" },
+        { tag: "북측", name: "원이대로 · 대정사거리", desc: "성산구 핵심 도로 진입 및 상남동·용호동 접근성 우수" },
+        { tag: "남동측", name: "남산초 · 남산중 생활권", desc: "도보 통학 및 쾌적한 주거 블록 인접" }
       ],
       "thesharp3": [
-        { tag: "북동측", name: "더샵 2단지 · 가음정천", desc: "더샵 브랜드 타운 중심축 및 산책로 인접" },
-        { tag: "서측", name: "장미공원 · 가음정시장", desc: "생활 편의시설 및 공원 도보권" },
-        { tag: "남측", name: "창원대로", desc: "창원국가산단 및 시외 차량 이동 최적" }
+        { tag: "남동측", name: "더샵 2단지 · 원이대로863번길", desc: "더샵 브랜드 타운 중심축(2단지) 바로 인접" },
+        { tag: "남측", name: "가음정우체국 · 가음정지구대 · 가음정시장", desc: "생활 편의시설 및 전통시장 도보권" },
+        { tag: "북측", name: "원이대로", desc: "성산구 간선도로 및 대중교통(S-BRT) 접근 우수" }
       ]
     };
 
@@ -3638,6 +3638,14 @@
       const bKeys = Object.keys(cx.buildings);
       const raw = [];
 
+      const mLat = 111320, mLng = 111320 * Math.cos(origLat * Math.PI / 180);
+      const siblingIds = ["thesharp1", "thesharp2", "thesharp3"];
+      const isSharpSibling = siblingIds.includes(cx.id);
+      const maxRadiusM = isSharpSibling ? 135 : 165;
+      const otherSiblings = isSharpSibling
+        ? siblingIds.filter(id => id !== cx.id && CORRECTED_REAL_COORDS[id]).map(id => CORRECTED_REAL_COORDS[id])
+        : [];
+
       feats.forEach(f => {
         if (!f.geometry) return;
         let ring = null;
@@ -3646,8 +3654,20 @@
         if (!ring || ring.length < 4) return;
 
         const m = measureRealBuildingPolygon(ring, origLng, origLat);
-        // Real apartment towers inside the complex block (area >= 200m^2, within 165m of complex center)
-        if (!m || m.areaM2 < 200 || m.distM > 165) return;
+        // Real apartment towers inside the complex block
+        if (!m || m.areaM2 < 200 || m.distM > maxRadiusM) return;
+
+        // Prevent bleed-over into adjacent sibling complexes (e.g. 1단지 across 대정로 or 3단지 to the NW)
+        if (otherSiblings.length > 0) {
+          const closerToOther = otherSiblings.some(sc => {
+            const dOther = Math.hypot((m.lng - sc.lng) * mLng, (m.lat - sc.lat) * mLat);
+            return dOther < m.distM - 4;
+          });
+          if (closerToOther) return;
+        }
+
+        const props = f.properties || {};
+        m.renderHeight = Number(props.render_height || props.height || 0);
         raw.push(m);
       });
 
@@ -3655,16 +3675,19 @@
 
       // Deduplicate buildings split across vector tiles: keep the largest polygon within 22m
       raw.sort((a, b) => b.areaM2 - a.areaM2);
-      const mLat = 111320, mLng = 111320 * Math.cos(origLat * Math.PI / 180);
       const unique = [];
       raw.forEach(cand => {
         const dup = unique.some(u => Math.hypot((u.lng - cand.lng) * mLng, (u.lat - cand.lat) * mLat) < 22);
         if (!dup) unique.push(cand);
       });
 
+      // Prefer actual high-rise apartment towers over low-rise sheds/community buildings when enough towers exist
+      const towers = unique.filter(u => u.areaM2 >= 260 && (u.renderHeight === 0 || u.renderHeight >= 18));
+      const pool = towers.length >= bKeys.length ? towers : unique;
+
       // Pick the closest N distinct real silhouettes (N = number of dongs in this complex, e.g. 6 for 2단지)
-      unique.sort((a, b) => a.distM - b.distM);
-      const picked = unique.slice(0, Math.min(unique.length, bKeys.length));
+      pool.sort((a, b) => a.distM - b.distM);
+      const picked = pool.slice(0, Math.min(pool.length, bKeys.length));
 
       // Sort spatially: South row (West->East: 201, 202, 203), then North row (West->East: 204, 205, 206)
       const sortedByLat = [...picked].sort((a, b) => a.lat - b.lat);
@@ -3754,7 +3777,7 @@
 
       if (!locMap.realFootprintCache) locMap.realFootprintCache = {};
       let exactMap = locMap.realFootprintCache[cx.id];
-      if (!exactMap || Object.keys(exactMap).length < Math.min(4, bKeys.length)) {
+      if (!exactMap || Object.keys(exactMap).length < bKeys.length) {
         const fresh = extractExactDongFootprints(cx, origLng, origLat);
         if (fresh && Object.keys(fresh).length >= (exactMap ? Object.keys(exactMap).length : 0)) {
           exactMap = fresh;
@@ -3852,7 +3875,7 @@
       if (!container || typeof maplibregl === "undefined" || typeof THREE === "undefined" || locMap.map) return;
 
       const cx = getActiveComplex();
-      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.6991, lat: 35.2088 };
+      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.69861, lat: 35.20932 };
       locMap.originLngLat = [coord.lng, coord.lat];
 
       container.innerHTML = "";
@@ -3873,6 +3896,17 @@
 
       map.on("style.load", () => {
         attachThreeLayerIfReady();
+      });
+
+      map.on("sourcedata", e => {
+        if (e.sourceId === "openmaptiles" && e.isSourceLoaded) {
+          const curCx = getActiveComplex();
+          const need = Object.keys(curCx.buildings).length;
+          const cached = locMap.realFootprintCache && locMap.realFootprintCache[curCx.id];
+          if (!cached || Object.keys(cached).length < need) {
+            rebuildThreeComplexMeshes();
+          }
+        }
       });
 
       map.on("rotate", syncLocCompassUI);
