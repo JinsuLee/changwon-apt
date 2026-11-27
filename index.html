@@ -371,28 +371,28 @@
           <!-- View Mode, Style & North Reset Controls -->
           <div class="flex flex-wrap items-center gap-1.5">
             <button id="btn-loc-3d" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1">
-              <i data-lucide="box" class="w-3.5 h-3.5"></i>
-              3D 뷰
+              <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+              단지 3D 상세
+            </button>
+            <button id="btn-loc-focus" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition inline-flex items-center gap-1">
+              <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+              매물 확대
             </button>
             <button id="btn-loc-top" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1">
               <i data-lucide="map" class="w-3.5 h-3.5"></i>
               탑 뷰 (2D)
             </button>
             <button id="btn-loc-style-vec" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition">
-              실제 3D지도
+              실제 지도 배경
             </button>
             <button id="btn-loc-style-sat" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-              위성 3D
+              실제 위성 배경
             </button>
             <button id="btn-loc-rot-left" type="button" title="왼쪽 회전" class="px-2 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">↺</button>
             <button id="btn-loc-rot-right" type="button" title="오른쪽 회전" class="px-2 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">↻</button>
             <button id="btn-loc-north" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition inline-flex items-center gap-1">
               <i data-lucide="compass" class="w-3.5 h-3.5 text-rose-400"></i>
               북쪽 (N↑)
-            </button>
-            <button id="btn-loc-focus" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition inline-flex items-center gap-1">
-              <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
-              매물 포커스
             </button>
           </div>
         </div>
@@ -420,7 +420,8 @@
 
         <!-- 3D Map Viewport -->
         <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="relative w-full h-[430px] sm:h-[520px] bg-slate-900 select-none" id="loc-3d-wrap">
+          <div class="relative w-full h-[460px] sm:h-[540px] bg-slate-100 select-none" id="loc-3d-wrap">
+            <!-- Unified MapLibre GL JS Real 3D Surrounding Map + Three.js Detailed Complex Model -->
             <div id="loc-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action:none;"></div>
 
             <!-- Live Rotating Compass Overlay -->
@@ -3379,52 +3380,84 @@
     }
 
 
-    // ==================== 9.5. REAL 3D GIS LOCATION MAP (MapLibre GL + Real Building Polygon Snap + Blue Unit Slice) ====================
+    // ==================== 9.5. FUSED REAL 3D CITY MAP (MapLibre GL) + DETAILED 3D COMPLEX (Three.js CustomLayer) ====================
     const locMap = {
       map: null,
-      marker: null,
-      styleMode: "vector", // "vector" | "satellite"
-      viewMode: "3d",      // "3d" | "top"
-      dragMode: "rotate",  // "rotate" (1-finger 360° orbit) | "pan" (map pan)
-      currentLngLat: [128.6952, 35.2098],
-      currentPolygon: null,
-      complexCenterCache: {},
-      dongPolygonsCache: {}, // complexId -> { dongKey: { lng, lat, poly } }
+      realMapStyle: "vector", // "vector" (OpenFreeMap 3D) | "satellite" (ArcGIS World Imagery)
+      viewMode: "3d",         // "3d" | "top"
+      dragMode: "rotate",     // "rotate" (1-finger 360° orbit) | "pan" (map pan)
       isOrbiting: false,
       lastOrbitX: 0,
-      lastOrbitY: 0
+      lastOrbitY: 0,
+      dongMarkers: [],
+      threeScene: null,
+      threeCamera: null,
+      threeRenderer: null,
+      worldGroup: null,
+      originLngLat: [128.6981, 35.2106],
+      selectedUnitLngLat: [128.6981, 35.2106],
+      selectedDongRotDeg: 0,
+      customLayerId: "threejs-complex-3d"
     };
 
-    try { localStorage.removeItem("changwon_apt_custom_pins_v1"); } catch (e) {}
+    // Corrected real-world GPS coordinates (East of 가음정천, North of 가음정지구대, West of 대정사거리)
+    const CORRECTED_REAL_COORDS = {
+      "thesharp1": { lng: 128.6992, lat: 35.2118 },
+      "thesharp2": { lng: 128.6981, lat: 35.2106 },
+      "thesharp3": { lng: 128.6967, lat: 35.2096 },
+      "hanhwa":    { lng: 128.6950, lat: 35.2106 },
+      "prugio":    { lng: 128.6922, lat: 35.2082 },
+      "xi":        { lng: 128.6942, lat: 35.2098 }
+    };
 
-    // Fallback complex centers (only used if live Nominatim is offline/unreachable)
-    const COMPLEX_GEO_FALLBACK = {
-      "thesharp1": { lng: 128.6962, lat: 35.2112 },
-      "thesharp2": { lng: 128.6954, lat: 35.2096 },
-      "thesharp3": { lng: 128.6974, lat: 35.2094 },
-      "hanhwa":    { lng: 128.6932, lat: 35.2108 },
-      "prugio":    { lng: 128.6904, lat: 35.2089 },
-      "xi":        { lng: 128.6924, lat: 35.2100 }
+    // Exact building footprint arrangement matching Naver Map (1 Three.js unit = 2.5m; +X=East, +Z=South, -Z=North)
+    const COMPLEX_3D_LAYOUTS = {
+      "thesharp2": {
+        dongs: {
+          "201": { x: -16, z: 9,   rotY: -0.22 },
+          "202": { x: -1,  z: 14,  rotY: -0.18 },
+          "203": { x: 14,  z: 11,  rotY: -0.20 },
+          "204": { x: -12, z: -10, rotY: -0.20 },
+          "205": { x: 2,   z: -8,  rotY: -0.18 },
+          "206": { x: 16,  z: -6,  rotY: -0.16 }
+        }
+      },
+      "thesharp1": {
+        dongs: {
+          "101": { x: -13, z: 8,   rotY: -0.15 },
+          "102": { x: 3,   z: 10,  rotY: -0.15 },
+          "103": { x: 15,  z: -2,  rotY: -0.12 },
+          "104": { x: -4,  z: -10, rotY: -0.15 }
+        }
+      },
+      "thesharp3": {
+        dongs: {
+          "301": { x: -14, z: 10,  rotY: -0.18 },
+          "302": { x: 2,   z: 12,  rotY: -0.18 },
+          "303": { x: 16,  z: 4,   rotY: -0.15 },
+          "304": { x: -10, z: -8,  rotY: -0.18 },
+          "305": { x: 7,   z: -10, rotY: -0.15 }
+        }
+      }
     };
 
     const GAEUM_INFO_PRESETS = {
       "thesharp2": [
-        { tag: "북측", name: "원이대로 · 남정초 · 더샵 1단지", desc: "도보권 초등학교 및 성산구 핵심 간선도로" },
-        { tag: "서측", name: "가음정천 · 기업사랑공원 · 장미공원", desc: "수변 산책로와 대형 공원 조망" },
-        { tag: "동측", name: "대정로 · 대정사거리 · 더샵 3단지", desc: "단지 주출입구 및 상권·버스정류장 접근 우수" },
-        { tag: "남측", name: "창원센텀푸르지오 · 창원대로", desc: "남향 채광 확보 및 창원산단·상남동 차량 이동 편리" }
+        { tag: "북측", name: "더샵 1단지 · 원이대로", desc: "바로 북측에 1단지(101~104동)와 원이대로 인접" },
+        { tag: "서측", name: "가음정천 · 남방2호교 · 장미공원", desc: "201·204동 서측으로 하천 산책로와 개방감 우수" },
+        { tag: "동측", name: "대정로 · 대정사거리", desc: "203·206동 동측 대정로 및 주출입구·상권 접근 편리" },
+        { tag: "남측", name: "가음정지구대 · 더샵 3단지", desc: "201·202·203동 남향·남서향 채광 우수" }
       ],
       "thesharp1": [
         { tag: "북측", name: "원이대로 (바로 인접)", desc: "성산구 핵심 도로 진입 및 상남동·용호동 접근성 우수" },
-        { tag: "서측", name: "남정초등학교 · 한화꿈에그린", desc: "도보 통학 편리 및 쾌적한 주거 블록" },
-        { tag: "남측", name: "더샵 2단지 · 센텀푸르지오", desc: "대단지 브랜드 타운 생활권 공유" },
-        { tag: "동측", name: "대정로 · 더샵 3단지", desc: "대정사거리 대중교통 및 근린상가 인접" }
+        { tag: "서측", name: "가음정천 · 남정초등학교", desc: "도보 통학 편리 및 쾌적한 주거 블록" },
+        { tag: "남측", name: "더샵 2단지", desc: "대단지 브랜드 타운 생활권 공유" },
+        { tag: "동측", name: "대정로", desc: "대정사거리 대중교통 및 근린상가 인접" }
       ],
       "thesharp3": [
-        { tag: "서측", name: "대정로 · 더샵 2단지", desc: "대정로 바로 접면, 더샵 브랜드 타운 중심축" },
-        { tag: "동측", name: "가음근린공원 · 남산동 학군", desc: "동측 공원 녹지 및 남산중·고 통학권" },
-        { tag: "남측", name: "창원대로 (차량 이동)", desc: "창원국가산단 및 시외 이동 최적" },
-        { tag: "북측", name: "원이대로 · 대정사거리", desc: "성산구 중심 상권 및 관공서 빠른 접근" }
+        { tag: "북동측", name: "더샵 2단지 · 가음정천", desc: "더샵 브랜드 타운 중심축 및 산책로 인접" },
+        { tag: "서측", name: "장미공원 · 가음정시장", desc: "생활 편의시설 및 공원 도보권" },
+        { tag: "남측", name: "창원대로", desc: "창원국가산단 및 시외 차량 이동 최적" }
       ]
     };
 
@@ -3436,8 +3469,7 @@
             type: "raster",
             tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
             tileSize: 256,
-            maxzoom: 19,
-            attribution: "Tiles © Esri World Imagery"
+            maxzoom: 19
           },
           "arcgis-labels": {
             type: "raster",
@@ -3453,106 +3485,91 @@
       };
     }
 
-    function polyCentroidAndArea(ring) {
-      if (!ring || ring.length < 3) return { lng: 0, lat: 0, areaM2: 0 };
-      let sx = 0, sy = 0;
-      const n = ring.length - (ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1] ? 1 : 0);
-      for (let i = 0; i < n; i++) { sx += ring[i][0]; sy += ring[i][1]; }
-      const cx = sx / n, cy = sy / n;
-      const mLat = 111320, mLng = 111320 * Math.cos(cy * Math.PI / 180);
-      let area = 0;
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        const x1 = (ring[i][0] - cx) * mLng, y1 = (ring[i][1] - cy) * mLat;
-        const x2 = (ring[j][0] - cx) * mLng, y2 = (ring[j][1] - cy) * mLat;
-        area += x1 * y2 - x2 * y1;
+    // High-resolution procedural apartment facade texture (Zigbang / Hogangnono 3D look!)
+    function createApartmentFacadeTexture(dongName, maxFloor, isSelectedDong, selFloor, selLine, priceText) {
+      const W = 512, H = 1024;
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = isSelectedDong ? "#f8fafc" : "#eef2f6";
+      ctx.fillRect(0, 0, W, H);
+
+      const floors = Math.max(10, maxFloor || 28);
+      const floorH = H / (floors + 1);
+
+      // 1F stone plinth
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillRect(0, H - floorH * 1.15, W, floorH * 1.15);
+      ctx.fillStyle = "#64748b";
+      ctx.fillRect(0, H - floorH * 1.18, W, 4);
+
+      const cols = 4;
+      const colW = W / cols;
+      for (let c = 0; c <= cols; c++) {
+        ctx.fillStyle = c === 2 ? "#cbd5e1" : "#e2e8f0";
+        ctx.fillRect(c * colW - 3, 0, 6, H - floorH);
       }
-      return { lng: cx, lat: cy, areaM2: Math.abs(area) * 0.5 };
-    }
 
-    // Slice a REAL building polygon along its longest axis into 4 equal line-sections (1호~4호라인)
-    // and return the exact sub-polygon + centroid for the selected line!
-    function sliceBuildingForLine(polyCoords, lineNum) {
-      const ring = polyCoords[0];
-      const { lng: cx, lat: cy } = polyCentroidAndArea(ring);
-      const mLat = 111320, mLng = 111320 * Math.cos(cy * Math.PI / 180);
+      for (let f = 1; f <= floors; f++) {
+        const yBottom = H - floorH * 1.15 - (f - 1) * floorH;
+        const yTop = yBottom - floorH;
 
-      // Convert to local meters & find longest edge angle (principal axis of the apartment block)
-      const pts = ring.map(p => [(p[0] - cx) * mLng, (p[1] - cy) * mLat]);
-      let bestLen = 0, bestAng = 0;
-      for (let i = 0; i < pts.length - 1; i++) {
-        const dx = pts[i + 1][0] - pts[i][0];
-        const dy = pts[i + 1][1] - pts[i][1];
-        const len = Math.hypot(dx, dy);
-        if (len > bestLen) {
-          bestLen = len;
-          bestAng = Math.atan2(dy, dx);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, yTop, W, floorH * 0.34);
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fillRect(0, yTop + floorH * 0.34, W, 2);
+
+        for (let line = 1; line <= cols; line++) {
+          const x0 = (line - 1) * colW + 7;
+          const uw = colW - 14;
+          const wy = yTop + floorH * 0.38;
+          const wh = floorH * 0.56;
+          const isThisUnit = isSelectedDong && f === selFloor && line === selLine;
+
+          if (isThisUnit) {
+            ctx.fillStyle = "#2563eb";
+            ctx.fillRect(x0 - 4, yTop + 1, uw + 8, floorH - 2);
+            ctx.strokeStyle = "#93c5fd";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x0 - 4, yTop + 1, uw + 8, floorH - 2);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const fontSize = Math.max(13, Math.min(20, Math.floor(floorH * 0.44)));
+            ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
+            ctx.fillText(`${f}0${line}호`, x0 + uw / 2, yTop + floorH * 0.36);
+            if (priceText) {
+              ctx.font = `bold ${Math.max(11, fontSize - 2)}px 'Inter', sans-serif`;
+              ctx.fillStyle = "#fef08a";
+              ctx.fillText(priceText, x0 + uw / 2, yTop + floorH * 0.72);
+            }
+          } else {
+            ctx.fillStyle = isSelectedDong ? "#475569" : "#64748b";
+            ctx.fillRect(x0, wy, uw, wh);
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillRect(x0 + uw * 0.33, wy, 2, wh);
+            ctx.fillRect(x0 + uw * 0.66, wy, 2, wh);
+
+            if (isSelectedDong && line === selLine && Math.abs(f - selFloor) <= 8) {
+              ctx.fillStyle = "rgba(15, 23, 42, 0.82)";
+              ctx.fillRect(x0 + 2, wy + 1, uw - 4, wh - 2);
+              ctx.fillStyle = "#e2e8f0";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.font = `bold ${Math.max(10, Math.min(15, Math.floor(floorH * 0.36)))}px 'Inter', sans-serif`;
+              ctx.fillText(`${f}0${line}호`, x0 + uw / 2, wy + wh / 2);
+            }
+          }
         }
       }
-      // Normalize axis so u increases from West to East (left to right on North-up map)
-      if (Math.cos(bestAng) < 0) bestAng += Math.PI;
-      const cosA = Math.cos(-bestAng), sinA = Math.sin(-bestAng);
 
-      const uv = pts.map(([x, y]) => [x * cosA - y * sinA, x * sinA + y * cosA]);
-      let uMin = Infinity, uMax = -Infinity, vMin = Infinity, vMax = -Infinity;
-      uv.forEach(([u, v]) => {
-        if (u < uMin) uMin = u;
-        if (u > uMax) uMax = u;
-        if (v < vMin) vMin = v;
-        if (v > vMax) vMax = v;
-      });
-
-      const clampedLine = Math.max(1, Math.min(4, lineNum || 1));
-      const span = Math.max(4, uMax - uMin);
-      const u0 = uMin + ((clampedLine - 1) / 4) * span;
-      const u1 = uMin + (clampedLine / 4) * span;
-      // Pad slightly outward (0.65m) so the blue unit band cleanly wraps the real building facade without z-fighting
-      const pad = 0.65;
-      const rectUV = [
-        [u0 - 0.15, vMin - pad],
-        [u1 + 0.15, vMin - pad],
-        [u1 + 0.15, vMax + pad],
-        [u0 - 0.15, vMax + pad],
-        [u0 - 0.15, vMin - pad]
-      ];
-
-      const cosB = Math.cos(bestAng), sinB = Math.sin(bestAng);
-      const outRing = rectUV.map(([u, v]) => {
-        const x = u * cosB - v * sinB;
-        const y = u * sinB + v * cosB;
-        return [cx + x / mLng, cy + y / mLat];
-      });
-
-      const uMid = (u0 + u1) / 2, vMid = (vMin + vMax) / 2;
-      const mx = uMid * cosB - vMid * sinB;
-      const my = uMid * sinB + vMid * cosB;
-      return {
-        poly: [outRing],
-        unitLng: cx + mx / mLng,
-        unitLat: cy + my / mLat
-      };
-    }
-
-    function makeViewFanGeoJSON(lng, lat, azimuthDeg, radiusM) {
-      const mPerDegLat = 111320;
-      const mPerDegLng = 111320 * Math.cos(lat * Math.PI / 180);
-      const pts = [[lng, lat]];
-      const spread = 24;
-      for (let d = azimuthDeg - spread; d <= azimuthDeg + spread; d += 4) {
-        const rad = d * Math.PI / 180;
-        const dx = Math.sin(rad) * radiusM;
-        const dy = Math.cos(rad) * radiusM;
-        pts.push([lng + dx / mPerDegLng, lat + dy / mPerDegLat]);
-      }
-      pts.push([lng, lat]);
-      return {
-        type: "FeatureCollection",
-        features: [{
-          type: "Feature",
-          geometry: { type: "Polygon", coordinates: [pts] },
-          properties: {}
-        }]
-      };
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      return tex;
     }
 
     function syncLocCompassUI() {
@@ -3568,284 +3585,229 @@
       }
       const viewEl = document.getElementById("loc-view-label");
       if (viewEl) {
-        viewEl.textContent = pitch < 12 ? "탑 뷰 (2D 지도)" : "실제 3D 지도";
+        viewEl.textContent = pitch < 12 ? "탑 뷰 (2D 지도)" : "실제 주변 + 단지 3D";
       }
     }
 
-    function ensureHighlightLayers() {
-      const map = locMap.map;
-      if (!map || !map.isStyleLoaded()) return;
-
-      if (!map.getSource("sel-view-fan")) {
-        map.addSource("sel-view-fan", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        map.addLayer({
-          id: "sel-view-fan-layer",
-          type: "fill",
-          source: "sel-view-fan",
-          paint: { "fill-color": "#3b82f6", "fill-opacity": 0.18 }
-        });
-        map.addLayer({
-          id: "sel-view-fan-outline",
-          type: "line",
-          source: "sel-view-fan",
-          paint: { "line-color": "#2563eb", "line-width": 1.6, "line-dasharray": [2, 2] }
-        });
-      }
-
-      // Selected Dong real building shell (clean architectural bright white-blue like Zigbang/Hogangnono 3D)
-      if (!map.getSource("sel-dong-3d")) {
-        map.addSource("sel-dong-3d", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        map.addLayer({
-          id: "sel-dong-3d-layer",
-          type: "fill-extrusion",
-          source: "sel-dong-3d",
-          paint: {
-            "fill-extrusion-color": "#dbeafe",
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": 0,
-            "fill-extrusion-opacity": 0.92
-          }
-        });
-      }
-
-      // Selected Unit (Exact Floor + Exact Line 1~4) highlighted in vivid BLUE!
-      if (!map.getSource("sel-unit-slice")) {
-        map.addSource("sel-unit-slice", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        map.addLayer({
-          id: "sel-unit-slice-layer",
-          type: "fill-extrusion",
-          source: "sel-unit-slice",
-          paint: {
-            "fill-extrusion-color": "#2563eb",
-            "fill-extrusion-height": ["get", "top"],
-            "fill-extrusion-base": ["get", "base"],
-            "fill-extrusion-opacity": 0.98
-          }
-        });
-      }
+    function clearDongMarkers() {
+      locMap.dongMarkers.forEach(m => m.remove());
+      locMap.dongMarkers = [];
     }
 
-    // Extract REAL apartment building polygons already rendered inside MapLibre's OpenFreeMap vector tiles!
-    // Guarantees the highlight is ALWAYS on a real apartment building — NEVER on a road!
-    function extractRealBuildingsFromMap(centerLng, centerLat, dongKeys) {
-      const map = locMap.map;
-      if (!map || !map.isStyleLoaded()) return null;
-
-      let feats = [];
-      try {
-        feats = map.querySourceFeatures("openmaptiles", { sourceLayer: "building" }) || [];
-      } catch (e) {
-        return null;
+    function rebuildThreeComplexMeshes() {
+      if (!locMap.worldGroup) return;
+      while (locMap.worldGroup.children.length > 0) {
+        locMap.worldGroup.remove(locMap.worldGroup.children[0]);
       }
-
-      const mLat = 111320, mLng = 111320 * Math.cos(centerLat * Math.PI / 180);
-      const candidates = [];
-      const seen = new Set();
-
-      feats.forEach(f => {
-        if (!f.geometry) return;
-        let ring = null;
-        if (f.geometry.type === "Polygon") ring = f.geometry.coordinates[0];
-        else if (f.geometry.type === "MultiPolygon") ring = f.geometry.coordinates[0][0];
-        if (!ring || ring.length < 4) return;
-
-        const { lng, lat, areaM2 } = polyCentroidAndArea(ring);
-        // Filter out tiny guardhouses/sheds (< 240 m^2) and buildings far away (> 240 m from complex center)
-        if (areaM2 < 240) return;
-        const distM = Math.hypot((lng - centerLng) * mLng, (lat - centerLat) * mLat);
-        if (distM > 240) return;
-
-        // Deduplicate tile-clipped duplicates by rounded centroid
-        const key = `${Math.round(lng * 10000)}_${Math.round(lat * 10000)}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-
-        candidates.push({ lng, lat, areaM2, distM, poly: [ring] });
-      });
-
-      if (candidates.length === 0) return null;
-
-      // Pick the closest N real apartment buildings (where N = number of dongs in this complex)
-      candidates.sort((a, b) => a.distM - b.distM);
-      const picked = candidates.slice(0, Math.min(candidates.length, dongKeys.length));
-
-      // Sort picked buildings spatially into rows (South row West->East, then North row West->East)
-      // so 201~203동 sit along the south side and 204~206동 along the north side, matching real Korean complex numbering!
-      const medianLat = picked.map(p => p.lat).sort((a, b) => a - b)[Math.floor(picked.length / 2)];
-      const southRow = picked.filter(p => p.lat <= medianLat).sort((a, b) => a.lng - b.lng);
-      const northRow = picked.filter(p => p.lat > medianLat).sort((a, b) => a.lng - b.lng);
-      const ordered = [...southRow, ...northRow];
-
-      const mapByDong = {};
-      dongKeys.forEach((dk, i) => {
-        const target = ordered[i % ordered.length];
-        mapByDong[dk] = target;
-      });
-      return mapByDong;
-    }
-
-    function updateHighlightOverlay(lng, lat, polyCoords) {
-      const map = locMap.map;
-      if (!map) return;
-      ensureHighlightLayers();
+      clearDongMarkers();
 
       const cx = getActiveComplex();
-      const b = cx.buildings[state.selectedDong] || Object.values(cx.buildings)[0];
-      const floor = Math.max(1, Math.min(b.maxFloor, Math.floor(state.selectedHo / 100) || 10));
-      const line = Math.max(1, Math.min(4, (state.selectedHo % 100) || 1));
-      const lineInfo = (b.lines && b.lines[line]) ? b.lines[line] : { dir: "남향", azimuth: 180 };
-
-      const totalH = (b.maxFloor || 25) * 3.0;
-      const sliceBase = Math.max(0, (floor - 1) * 3.0);
-      const sliceTop = sliceBase + 4.0;
-
-      const dongSrc = map.getSource("sel-dong-3d");
-      const unitSrc = map.getSource("sel-unit-slice");
-      const fanSrc = map.getSource("sel-view-fan");
-
-      let pinLng = lng, pinLat = lat;
-
-      if (polyCoords) {
-        // Real building footprint matched!
-        const sliced = sliceBuildingForLine(polyCoords, line);
-        pinLng = sliced.unitLng;
-        pinLat = sliced.unitLat;
-
-        if (dongSrc) {
-          dongSrc.setData({
-            type: "FeatureCollection",
-            features: [{
-              type: "Feature",
-              geometry: { type: "Polygon", coordinates: polyCoords },
-              properties: { height: totalH }
-            }]
-          });
-        }
-        if (unitSrc) {
-          unitSrc.setData({
-            type: "FeatureCollection",
-            features: [{
-              type: "Feature",
-              geometry: { type: "Polygon", coordinates: sliced.poly },
-              properties: { base: sliceBase, top: sliceTop }
-            }]
-          });
-        }
-      } else {
-        // Clear extruded layers if no real polygon yet (never draw a fake box on a road!)
-        if (dongSrc) dongSrc.setData({ type: "FeatureCollection", features: [] });
-        if (unitSrc) unitSrc.setData({ type: "FeatureCollection", features: [] });
-      }
-
-      if (fanSrc) {
-        fanSrc.setData(makeViewFanGeoJSON(pinLng, pinLat, lineInfo.azimuth || 180, 80));
-      }
-
-      // Floating HTML Marker in crisp blue for exact selected unit
-      if (locMap.marker) locMap.marker.remove();
-      const el = document.createElement("div");
-      el.className = "pointer-events-none flex flex-col items-center";
-      el.innerHTML = `
-        <div class="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-extrabold shadow-lg border-2 border-white whitespace-nowrap">
-          ${b.name} ${state.selectedHo}호 · ${floor}층 (${lineInfo.dir})
-        </div>
-        <div class="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-blue-600"></div>
-      `;
-      locMap.marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([pinLng, pinLat])
-        .addTo(map);
-    }
-
-    async function resolveComplexCenter(cx) {
-      if (locMap.complexCenterCache[cx.id]) return locMap.complexCenterCache[cx.id];
-
-      // Always try live OpenStreetMap Nominatim FIRST so every complex gets its TRUE map center!
-      const queries = [
-        `${cx.name} 창원`,
-        cx.address.replace(/\(.*?\)/g, "").trim(),
-        cx.name
-      ];
-      for (const q of queries) {
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=kr&q=${encodeURIComponent(q)}`;
-          const res = await fetch(url, { headers: { "Accept-Language": "ko" } });
-          if (res.ok) {
-            const arr = await res.json();
-            if (arr && arr.length > 0) {
-              const center = { lng: parseFloat(arr[0].lon), lat: parseFloat(arr[0].lat) };
-              locMap.complexCenterCache[cx.id] = center;
-              return center;
-            }
-          }
-        } catch (e) {}
-      }
-      const fb = COMPLEX_GEO_FALLBACK[cx.id] || { lng: 128.6954, lat: 35.2096 };
-      locMap.complexCenterCache[cx.id] = fb;
-      return fb;
-    }
-
-    function snapToRealDongBuildingAndRender(cx, center) {
       const bKeys = Object.keys(cx.buildings);
       const selDong = cx.buildings[state.selectedDong] ? state.selectedDong : bKeys[0];
-      const b = cx.buildings[selDong];
-      const statusEl = document.getElementById("loc-geocode-status");
+      const floor = Math.max(1, Math.min(cx.buildings[selDong].maxFloor, Math.floor(state.selectedHo / 100) || 10));
+      const line = Math.max(1, Math.min(4, (state.selectedHo % 100) || 1));
+      const priceText = state.askingPrice ? `${Number(state.askingPrice).toFixed(2).replace(/\.00$/, '')}억` : (cx.recentTxLabel || "");
+      const layout = COMPLEX_3D_LAYOUTS[cx.id] || null;
 
-      // Reuse cached real building polygons for this complex if already extracted
-      let dongMap = locMap.dongPolygonsCache[cx.id];
-      if (!dongMap) {
-        dongMap = extractRealBuildingsFromMap(center.lng, center.lat, bKeys);
-        if (dongMap) locMap.dongPolygonsCache[cx.id] = dongMap;
-      }
+      const [origLng, origLat] = locMap.originLngLat;
+      const mPerDegLat = 111320;
+      const mPerDegLng = 111320 * Math.cos(origLat * Math.PI / 180);
 
-      if (dongMap && dongMap[selDong]) {
-        const hit = dongMap[selDong];
-        locMap.currentLngLat = [hit.lng, hit.lat];
-        locMap.currentPolygon = hit.poly;
-        updateHighlightOverlay(hit.lng, hit.lat, hit.poly);
-        if (locMap.map) {
-          locMap.map.easeTo({ center: [hit.lng, hit.lat], duration: 450 });
+      // 1. Landscaped Green Complex Ground Pad + Walkways sitting flush on the real map!
+      const lawn = new THREE.Mesh(
+        new THREE.BoxGeometry(46, 0.35, 40),
+        new THREE.MeshLambertMaterial({ color: 0x4ea832, side: THREE.DoubleSide })
+      );
+      lawn.position.set(0, 0.2, 1);
+      locMap.worldGroup.add(lawn);
+
+      const walkMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc, side: THREE.DoubleSide });
+      const w1 = new THREE.Mesh(new THREE.BoxGeometry(42, 0.42, 2.2), walkMat); w1.position.set(0, 0.24, 1);
+      const w2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.42, 36), walkMat); w2.position.set(-6, 0.24, 1);
+      const w3 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.42, 36), walkMat); w3.position.set(7, 0.24, 1);
+      locMap.worldGroup.add(w1, w2, w3);
+
+      const play = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.0, 3.0, 0.46, 20),
+        new THREE.MeshLambertMaterial({ color: 0xfbbf24, side: THREE.DoubleSide })
+      );
+      play.position.set(0, 0.26, 1);
+      locMap.worldGroup.add(play);
+
+      // Decorative Trees inside complex lawn
+      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f, side: THREE.DoubleSide });
+      const leafMat = new THREE.MeshLambertMaterial({ color: 0x15803d, side: THREE.DoubleSide });
+      [[-20, -15], [-20, 15], [20, -15], [20, 15], [-5, 1], [6, 1]].forEach(([tx, tz]) => {
+        const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 1.4, 6), trunkMat);
+        tr.position.set(tx, 1.0, tz);
+        const lf = new THREE.Mesh(new THREE.SphereGeometry(1.3, 8, 8), leafMat);
+        lf.position.set(tx, 2.5, tz);
+        locMap.worldGroup.add(tr, lf);
+      });
+
+      // 2. Render EVERY Dong of the selected complex in crisp Zigbang/Hogangnono architectural 3D!
+      bKeys.forEach((dk, idx) => {
+        const b = cx.buildings[dk];
+        const isSel = dk === selDong;
+        let bx, bz, rotY = -0.15;
+        if (layout && layout.dongs[dk]) {
+          bx = layout.dongs[dk].x;
+          bz = layout.dongs[dk].z;
+          rotY = layout.dongs[dk].rotY;
+        } else {
+          const cols = Math.min(3, Math.ceil(Math.sqrt(bKeys.length)));
+          const col = idx % cols;
+          const row = Math.floor(idx / cols);
+          bx = (col - (cols - 1) / 2) * 15;
+          bz = (row - (Math.ceil(bKeys.length / cols) - 1) / 2) * 16;
         }
-        if (statusEl) statusEl.textContent = `실제 ${b.name} 건물 매칭 완료 (파란색=선택 매물)`;
+
+        // 1 Three.js unit = 2.5 real meters -> realistic real-world height!
+        const bw = 11.2;
+        const bd = 4.2;
+        const bh = Math.max(14, (b.maxFloor || 27) * 1.05);
+
+        const facadeTex = createApartmentFacadeTexture(b.name, b.maxFloor, isSel, floor, line, priceText);
+        const sideMat = new THREE.MeshLambertMaterial({ color: isSel ? 0xf8fafc : 0xe2e8f0, side: THREE.DoubleSide });
+        const roofMat = new THREE.MeshLambertMaterial({ color: isSel ? 0xdbeafe : 0xe2e8f0, side: THREE.DoubleSide });
+        const frontMat = new THREE.MeshLambertMaterial({ map: facadeTex, side: THREE.DoubleSide });
+
+        const tower = new THREE.Mesh(
+          new THREE.BoxGeometry(bw, bh, bd),
+          [sideMat, sideMat, roofMat, sideMat, frontMat, frontMat]
+        );
+        tower.position.set(bx, bh / 2 + 0.4, bz);
+        tower.rotation.y = rotY;
+        locMap.worldGroup.add(tower);
+
+        // Rooftop elevator core
+        const core = new THREE.Mesh(
+          new THREE.BoxGeometry(bw * 0.35, 1.5, bd * 0.62),
+          new THREE.MeshLambertMaterial({ color: 0xe2e8f0, side: THREE.DoubleSide })
+        );
+        core.position.set(bx, bh + 1.15, bz);
+        core.rotation.y = rotY;
+        locMap.worldGroup.add(core);
+
+        // Exact GPS coordinate of this building for its floating roof badge!
+        const bLng = origLng + (bx * 2.5) / mPerDegLng;
+        const bLat = origLat - (bz * 2.5) / mPerDegLat; // +Z is South => -lat
+
+        if (locMap.map) {
+          const badgeEl = document.createElement("div");
+          badgeEl.className = "pointer-events-none flex flex-col items-center";
+          badgeEl.innerHTML = isSel
+            ? `<div class="px-2 py-0.5 rounded-lg bg-blue-600 text-white text-[11px] font-extrabold shadow-lg border border-white whitespace-nowrap">${b.name} ${state.selectedHo}호</div>`
+            : `<div class="px-1.5 py-0.5 rounded-md bg-slate-900/85 text-white text-[10px] font-bold shadow border border-white/25 whitespace-nowrap">${b.name} <span class="text-slate-300 font-normal">${b.maxFloor}F</span></div>`;
+          const mk = new maplibregl.Marker({ element: badgeEl, anchor: "bottom" })
+            .setLngLat([bLng, bLat])
+            .addTo(locMap.map);
+          locMap.dongMarkers.push(mk);
+        }
+
+        if (isSel) {
+          locMap.selectedUnitLngLat = [bLng, bLat];
+          locMap.selectedDongRotDeg = Math.round((-rotY * 180) / Math.PI);
+        }
+      });
+
+      const statusEl = document.getElementById("loc-geocode-status");
+      if (statusEl) statusEl.textContent = `${cx.shortName} ${cx.buildings[selDong].name} ${state.selectedHo}호 · 실제 주변 3D 연동 완료`;
+
+      if (locMap.map) locMap.map.triggerRepaint();
+    }
+
+    function createThreeCustomLayer() {
+      return {
+        id: locMap.customLayerId,
+        type: "custom",
+        renderingMode: "3d",
+        onAdd: function (map, gl) {
+          locMap.threeCamera = new THREE.Camera();
+          locMap.threeScene = new THREE.Scene();
+
+          const hemi = new THREE.HemisphereLight(0xffffff, 0xcbd5e1, 0.95);
+          locMap.threeScene.add(hemi);
+          const dir1 = new THREE.DirectionalLight(0xfffbeb, 0.72);
+          dir1.position.set(40, 80, 50).normalize();
+          locMap.threeScene.add(dir1);
+          const dir2 = new THREE.DirectionalLight(0xe0f2fe, 0.45);
+          dir2.position.set(-40, 60, -50).normalize();
+          locMap.threeScene.add(dir2);
+
+          locMap.worldGroup = new THREE.Group();
+          locMap.threeScene.add(locMap.worldGroup);
+
+          locMap.threeRenderer = new THREE.WebGLRenderer({
+            canvas: map.getCanvas(),
+            context: gl,
+            antialias: true
+          });
+          locMap.threeRenderer.autoClear = false;
+
+          rebuildThreeComplexMeshes();
+        },
+        render: function (gl, matrix) {
+          if (!locMap.threeRenderer || !locMap.threeScene || !locMap.threeCamera) return;
+          const mc = maplibregl.MercatorCoordinate.fromLngLat(locMap.originLngLat, 0);
+          const s = mc.meterInMercatorCoordinateUnits() * 2.5; // 1 Three.js unit = 2.5 real meters
+          const rotX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+
+          const m = new THREE.Matrix4().fromArray(matrix);
+          const l = new THREE.Matrix4()
+            .makeTranslation(mc.x, mc.y, mc.z)
+            .scale(new THREE.Vector3(s, -s, s))
+            .multiply(rotX);
+
+          locMap.threeCamera.projectionMatrix = m.multiply(l);
+          locMap.threeRenderer.resetState();
+          locMap.threeRenderer.render(locMap.threeScene, locMap.threeCamera);
+        }
+      };
+    }
+
+    function attachThreeLayerIfReady() {
+      const map = locMap.map;
+      if (!map || !map.isStyleLoaded()) return;
+      if (!map.getLayer(locMap.customLayerId)) {
+        map.addLayer(createThreeCustomLayer());
       } else {
-        locMap.currentLngLat = [center.lng, center.lat];
-        locMap.currentPolygon = null;
-        updateHighlightOverlay(center.lng, center.lat, null);
-        if (statusEl) statusEl.textContent = `실제 단지 위치 표시 완료 (${b.name})`;
+        rebuildThreeComplexMeshes();
       }
     }
 
     function initLoc3DScene() {
       const container = document.getElementById("loc-3d-canvas");
-      if (!container || typeof maplibregl === "undefined" || locMap.map) return;
+      if (!container || typeof maplibregl === "undefined" || typeof THREE === "undefined" || locMap.map) return;
+
+      const cx = getActiveComplex();
+      const coord = CORRECTED_REAL_COORDS[cx.id] || { lng: 128.6981, lat: 35.2106 };
+      locMap.originLngLat = [coord.lng, coord.lat];
 
       container.innerHTML = "";
       const map = new maplibregl.Map({
         container: "loc-3d-canvas",
-        style: locMap.styleMode === "satellite" ? getSatelliteStyle() : "https://tiles.openfreemap.org/styles/liberty",
-        center: locMap.currentLngLat,
-        zoom: 17.2,
+        style: locMap.realMapStyle === "satellite" ? getSatelliteStyle() : "https://tiles.openfreemap.org/styles/liberty",
+        center: locMap.originLngLat,
+        zoom: 17.0,
         pitch: 58,
         bearing: 0, // North strictly UP by default!
         antialias: true
       });
 
       map.on("load", () => {
-        ensureHighlightLayers();
+        attachThreeLayerIfReady();
         syncLocCompassUI();
-        const cx = getActiveComplex();
-        const center = locMap.complexCenterCache[cx.id] || COMPLEX_GEO_FALLBACK[cx.id] || { lng: 128.6954, lat: 35.2096 };
-        snapToRealDongBuildingAndRender(cx, center);
       });
 
       map.on("style.load", () => {
-        ensureHighlightLayers();
-        updateHighlightOverlay(locMap.currentLngLat[0], locMap.currentLngLat[1], locMap.currentPolygon);
+        attachThreeLayerIfReady();
       });
 
       map.on("rotate", syncLocCompassUI);
       map.on("pitch", syncLocCompassUI);
 
-      // Default 1-finger / left-drag rotates & tilts camera around the fixed building (pin NEVER moves on touch/click!)
+      // Default 1-finger / left-drag rotates & tilts 360° around the fixed complex (pin NEVER moves!)
       map.dragPan.disable();
       const canvasEl = map.getCanvas();
       canvasEl.addEventListener("pointerdown", e => {
@@ -3877,6 +3839,23 @@
       if (locMap.map) locMap.map.resize();
     }
 
+    async function resolveRealOrigin(cx) {
+      if (CORRECTED_REAL_COORDS[cx.id]) return CORRECTED_REAL_COORDS[cx.id];
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=kr&q=${encodeURIComponent(cx.name + " 창원")}`;
+        const res = await fetch(url, { headers: { "Accept-Language": "ko" } });
+        if (res.ok) {
+          const arr = await res.json();
+          if (arr && arr.length > 0) {
+            const c = { lng: parseFloat(arr[0].lon), lat: parseFloat(arr[0].lat) };
+            CORRECTED_REAL_COORDS[cx.id] = c;
+            return c;
+          }
+        }
+      } catch (e) {}
+      return { lng: 128.6981, lat: 35.2106 };
+    }
+
     async function renderPageLocation() {
       const cx = getActiveComplex();
       const bKeys = Object.keys(cx.buildings);
@@ -3886,14 +3865,12 @@
       const line = Math.max(1, Math.min(4, (state.selectedHo % 100) || 1));
       const lineInfo = b.lines[line] || b.lines[1];
 
-      // Header Badges
       document.getElementById("loc-unit-badge").textContent = `${b.name} ${state.selectedHo}호 (${floor}/${b.maxFloor}층)`;
       document.getElementById("loc-dir-badge").textContent = `${lineInfo.dir} · ${lineInfo.bay} ${lineInfo.layout}`;
       document.getElementById("loc-parking-badge").textContent = `세대당 주차 ${cx.parking || "미등록"}`;
-      document.getElementById("loc-complex-title").textContent = `${cx.name} · 실제 3D 위치 지도`;
-      document.getElementById("loc-complex-addr").textContent = `${cx.address} · 실제 3D 건물 위 선택 호수 파란색 표시 · 북쪽(N↑) 기본 고정`;
+      document.getElementById("loc-complex-title").textContent = `${cx.name} · 실제 주변 3D 지도 + 단지 상세`;
+      document.getElementById("loc-complex-addr").textContent = `${cx.address} · 실제 주변 3D 건물·도로 위에 선택 단지와 파란색 매물 표시 (북쪽 N↑ 기본 고정)`;
 
-      // Dong Pills
       const pillsEl = document.getElementById("loc-dong-pills");
       pillsEl.innerHTML = bKeys.map(dk => {
         const active = dk === state.selectedDong;
@@ -3909,28 +3886,24 @@
         });
       });
 
-      // Floor & Line Selects
       const fSel = document.getElementById("loc-floor-select");
       fSel.innerHTML = Array.from({ length: b.maxFloor }, (_, i) => b.maxFloor - i).map(f =>
         `<option value="${f}" ${f === floor ? 'selected' : ''}>${f}층</option>`
       ).join("");
       document.getElementById("loc-line-select").value = String(line);
 
-      // Right Side Analysis Card
       const tier = floor / b.maxFloor >= 0.7 ? "고층 (개방감·조망 우수)" : floor / b.maxFloor >= 0.35 ? "중층 (선호 로열 구간)" : "저층 (단지 조경·출입 편리)";
       document.getElementById("loc-unit-analysis").innerHTML = `
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">선택 매물</span><span class="font-bold text-slate-900">${b.name} ${state.selectedHo}호</span></div>
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">층수 구간</span><span class="font-semibold text-blue-700">${floor}층 / 최고 ${b.maxFloor}층 · ${tier}</span></div>
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">라인 · 향</span><span class="font-semibold text-blue-700">${line}호라인 (${lineInfo.type}) · ${lineInfo.dir}</span></div>
         <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">세대당 주차</span><span class="font-bold text-emerald-700">${cx.parking || "미등록"}</span></div>
-        <p class="text-[11px] text-slate-500 pt-1">실제 지도 위 ${b.name} 건물에서 <b>파란색으로 표시된 층·라인</b>이 선택하신 ${state.selectedHo}호 위치입니다. 드래그해도 위치는 고정된 채 화면 각도만 회전합니다.</p>
+        <p class="text-[11px] text-slate-500 pt-1">실제 주변 3D 도시 지도 위에 선택한 단지가 정확히 배치되며, <b>매물 확대</b> 버튼으로 ${b.name} ${state.selectedHo}호 파란색 세대 창문을 확대해 볼 수 있습니다.</p>
       `;
 
-      // Surroundings List
       const infoItems = GAEUM_INFO_PRESETS[cx.id] || [
-        { tag: "실제 지도", name: "실제 도로·하천·공원·학교 표시", desc: "지도를 확대·축소하고 회전해 주변 실제 입지를 바로 확인하세요." },
-        { tag: "위성 3D", name: "위성 3D 버튼으로 실제 항공사진 확인", desc: "상단 '위성 3D' 버튼을 누르면 실제 위성사진 위에서 동 위치를 볼 수 있습니다." },
-        { tag: "호수 표시", name: "선택한 동·층·라인 파란색 3D 강조", desc: "동·층·라인을 바꾸면 실제 건물 위 파란색 매물 위치가 즉시 이동합니다." }
+        { tag: "실제 주변", name: "실제 도로·하천·인근 3D 건물 연동", desc: "축소(−)하거나 회전하면 주변 실제 아파트·학교·도로가 모두 3D로 보입니다." },
+        { tag: "위성 전환", name: "실제 위성 배경 버튼 지원", desc: "상단 버튼으로 도로 3D 지도와 실제 항공 위성사진을 즉시 전환할 수 있습니다." }
       ];
       document.getElementById("loc-surroundings-list").innerHTML = infoItems.map(it => `
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
@@ -3946,27 +3919,22 @@
       document.getElementById("loc-naver-map-link").href = `https://map.naver.com/p/search/${q}`;
       document.getElementById("loc-kakao-map-link").href = `https://map.kakao.com/?q=${q}`;
 
-      if (!locMap.map) initLoc3DScene();
-      if (window.lucide) lucide.createIcons();
+      const coord = await resolveRealOrigin(cx);
+      locMap.originLngLat = [coord.lng, coord.lat];
 
-      const center = await resolveComplexCenter(cx);
-      if (locMap.map) {
-        if (locMap.dongPolygonsCache[cx.id] && locMap.dongPolygonsCache[cx.id][state.selectedDong]) {
-          snapToRealDongBuildingAndRender(cx, center);
-        } else {
-          // Fly to real complex center first, then extract real building polygons once vector tiles settle!
-          locMap.map.flyTo({
-            center: [center.lng, center.lat],
-            zoom: 17.2,
-            pitch: locMap.viewMode === "top" ? 0 : 58,
-            bearing: 0,
-            duration: 650
-          });
-          locMap.map.once("idle", () => {
-            snapToRealDongBuildingAndRender(cx, center);
-          });
-        }
+      if (!locMap.map) {
+        initLoc3DScene();
+      } else {
+        attachThreeLayerIfReady();
+        locMap.map.flyTo({
+          center: locMap.originLngLat,
+          zoom: 17.0,
+          pitch: locMap.viewMode === "top" ? 0 : 58,
+          bearing: 0,
+          duration: 600
+        });
       }
+      if (window.lucide) lucide.createIcons();
     }
 
     function bindLocEvents() {
@@ -3980,37 +3948,46 @@
       const btnFocus = document.getElementById("btn-loc-focus");
       const btnZoomIn = document.getElementById("btn-loc-zoom-in");
       const btnZoomOut = document.getElementById("btn-loc-zoom-out");
+      const btnDragMode = document.getElementById("btn-loc-drag-mode");
       const fSel = document.getElementById("loc-floor-select");
       const lSel = document.getElementById("loc-line-select");
 
-      function updateViewBtnStyles(mode) {
-        locMap.viewMode = mode;
-        if (mode === "3d") {
-          btn3d.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1";
-          btnTop.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1";
-        } else {
-          btnTop.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1";
-          btn3d.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1";
-        }
-      }
-
       btn3d.addEventListener("click", () => {
-        updateViewBtnStyles("3d");
-        if (locMap.map) locMap.map.easeTo({ pitch: 58, zoom: Math.max(16.8, locMap.map.getZoom()), duration: 500 });
+        locMap.viewMode = "3d";
+        btn3d.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1";
+        btnTop.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1";
+        if (locMap.map) locMap.map.flyTo({ center: locMap.originLngLat, zoom: 17.0, pitch: 58, bearing: 0, duration: 500 });
       });
+
       btnTop.addEventListener("click", () => {
-        updateViewBtnStyles("top");
-        if (locMap.map) locMap.map.easeTo({ pitch: 0, bearing: 0, zoom: 16.5, duration: 500 });
+        locMap.viewMode = "top";
+        btnTop.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1";
+        btn3d.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1";
+        if (locMap.map) locMap.map.flyTo({ center: locMap.originLngLat, zoom: 16.5, pitch: 0, bearing: 0, duration: 500 });
+      });
+
+      btnFocus.addEventListener("click", () => {
+        locMap.viewMode = "3d";
+        if (locMap.map) {
+          locMap.map.flyTo({
+            center: locMap.selectedUnitLngLat,
+            zoom: 18.6,
+            pitch: 68,
+            bearing: locMap.selectedDongRotDeg || 0,
+            duration: 600
+          });
+        }
       });
 
       btnVec.addEventListener("click", () => {
-        locMap.styleMode = "vector";
+        locMap.realMapStyle = "vector";
         btnVec.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition";
         btnSat.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition";
         if (locMap.map) locMap.map.setStyle("https://tiles.openfreemap.org/styles/liberty");
       });
+
       btnSat.addEventListener("click", () => {
-        locMap.styleMode = "satellite";
+        locMap.realMapStyle = "satellite";
         btnSat.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition";
         btnVec.className = "px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition";
         if (locMap.map) locMap.map.setStyle(getSatelliteStyle());
@@ -4026,12 +4003,6 @@
         if (locMap.map) locMap.map.easeTo({ bearing: 0, duration: 400 });
         showToast("지도를 북쪽(N↑) 기준으로 정렬했습니다.");
       });
-      btnFocus.addEventListener("click", () => {
-        updateViewBtnStyles("3d");
-        if (locMap.map) {
-          locMap.map.flyTo({ center: locMap.currentLngLat, zoom: 17.6, pitch: 58, bearing: 0, duration: 600 });
-        }
-      });
       btnZoomIn.addEventListener("click", () => {
         if (locMap.map) locMap.map.zoomIn({ duration: 250 });
       });
@@ -4039,8 +4010,8 @@
         if (locMap.map) locMap.map.zoomOut({ duration: 250 });
       });
 
-      const btnDragMode = document.getElementById("btn-loc-drag-mode");
       if (btnDragMode) {
+        btnDragMode.classList.remove("hidden");
         btnDragMode.addEventListener("click", () => {
           if (locMap.dragMode === "rotate") {
             locMap.dragMode = "pan";
