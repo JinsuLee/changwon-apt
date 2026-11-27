@@ -66,21 +66,25 @@
               + 단지 추가
             </button>
           </div>
-          <p id="header-complex-sub" class="text-[11px] text-slate-500 truncate hidden sm:block">경남 창원시 성산구 가음동 · 624세대 · 2017.04 입주</p>
+          <p id="header-complex-sub" class="text-[11px] text-slate-500 truncate">경남 창원시 성산구 가음동 · 624세대 · 주차 1.46대/세대 · 2017.04 입주</p>
         </div>
       </div>
 
-      <!-- 3-Page Switcher -->
-      <nav class="flex items-center bg-slate-100 p-1 rounded-xl shrink-0" aria-label="페이지 전환">
-        <button id="tab-page1" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-blue-700 shadow-sm">
+      <!-- 4-Page Switcher -->
+      <nav class="flex items-center bg-slate-100 p-1 rounded-xl shrink-0 overflow-x-auto max-w-full" aria-label="페이지 전환">
+        <button id="tab-page1" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-blue-700 shadow-sm whitespace-nowrap">
           1. 평면·3D일조
         </button>
-        <button id="tab-page2" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+        <button id="tab-page2" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 whitespace-nowrap">
           2. 시세·실거래
         </button>
-        <button id="tab-page3" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 inline-flex items-center gap-1">
+        <button id="tab-page3" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 whitespace-nowrap inline-flex items-center gap-1">
           <span>3. 관심 매물</span>
           <span id="fav-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">2</span>
+        </button>
+        <button id="tab-page4" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 whitespace-nowrap inline-flex items-center gap-1">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          <span>4. 위치·3D지도</span>
         </button>
       </nav>
 
@@ -340,6 +344,145 @@
           </div>
 
         </div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 4: 단지·동호수 3D 위치 지도 ==================== -->
+    <section id="page-location" class="hidden space-y-5">
+
+      <!-- Location Top Control Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-600 text-white">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                <span id="loc-unit-badge">202동 1601호</span>
+              </span>
+              <span id="loc-dir-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">남서향 · 4Bay</span>
+              <span id="loc-parking-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">주차 1.46대/세대</span>
+            </div>
+            <h2 id="loc-complex-title" class="text-base sm:text-lg font-bold text-slate-900 mt-1.5">창원 더샵 센트럴파크 2단지 · 3D 위치 및 주변 입지</h2>
+            <p id="loc-complex-addr" class="text-xs text-slate-500">기본 북쪽(N↑) 고정 · 마우스 드래그 또는 손가락 터치로 360° 회전 및 줌이 가능합니다.</p>
+          </div>
+
+          <!-- View Mode & North Reset Controls -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button id="btn-loc-3d" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1">
+              <i data-lucide="box" class="w-3.5 h-3.5"></i>
+              3D 뷰
+            </button>
+            <button id="btn-loc-top" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1">
+              <i data-lucide="map" class="w-3.5 h-3.5"></i>
+              탑 뷰 (2D)
+            </button>
+            <button id="btn-loc-north" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition inline-flex items-center gap-1">
+              <i data-lucide="compass" class="w-3.5 h-3.5 text-rose-400"></i>
+              북쪽 정렬 (N↑)
+            </button>
+            <button id="btn-loc-focus" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition inline-flex items-center gap-1">
+              <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
+              선택 매물 포커스
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Dong / Floor / Line Selector inside Location Tab -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+          <span class="text-xs font-semibold text-slate-500 shrink-0">동 선택:</span>
+          <div id="loc-dong-pills" class="flex flex-wrap gap-1.5"></div>
+          <div class="flex items-center gap-2 ml-auto">
+            <label for="loc-floor-select" class="text-xs font-semibold text-slate-500">층:</label>
+            <select id="loc-floor-select" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-800"></select>
+            <label for="loc-line-select" class="text-xs font-semibold text-slate-500">라인:</label>
+            <select id="loc-line-select" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-800">
+              <option value="1">1호라인</option>
+              <option value="2">2호라인</option>
+              <option value="3">3호라인</option>
+              <option value="4">4호라인</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main 3D Map Canvas + Side Context Panel -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- 3D Map Viewport -->
+        <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="relative w-full h-[430px] sm:h-[520px] bg-slate-900 select-none" id="loc-3d-wrap">
+            <div id="loc-3d-canvas" class="w-full h-full cursor-grab active:cursor-grabbing" style="touch-action:none;"></div>
+
+            <!-- Live Rotating Compass Overlay -->
+            <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-slate-950/80 backdrop-blur text-white px-3 py-2 rounded-xl border border-white/15 shadow-lg pointer-events-none">
+              <div class="relative w-9 h-9 rounded-full border border-white/25 flex items-center justify-center bg-slate-900/90">
+                <div id="loc-compass-needle" class="w-full h-full flex flex-col items-center justify-between py-0.5 transition-transform duration-75" style="transform: rotate(0deg);">
+                  <span class="text-[9px] font-black text-rose-400 leading-none">N</span>
+                  <div class="w-0.5 h-3.5 bg-gradient-to-b from-rose-500 to-slate-400 rounded-full"></div>
+                  <span class="text-[8px] font-bold text-slate-400 leading-none">S</span>
+                </div>
+              </div>
+              <div class="text-[11px] leading-tight">
+                <div class="font-bold text-white flex items-center gap-1">
+                  <span id="loc-view-label">3D 입체 뷰</span>
+                </div>
+                <div id="loc-bearing-text" class="text-[10px] text-slate-300">북쪽 위 고정 (0°)</div>
+              </div>
+            </div>
+
+            <!-- Zoom Buttons Overlay -->
+            <div class="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
+              <button id="btn-loc-zoom-in" type="button" aria-label="확대" class="w-8 h-8 rounded-lg bg-white/95 hover:bg-white text-slate-800 font-bold text-base shadow-md border border-slate-200 flex items-center justify-center">+</button>
+              <button id="btn-loc-zoom-out" type="button" aria-label="축소" class="w-8 h-8 rounded-lg bg-white/95 hover:bg-white text-slate-800 font-bold text-base shadow-md border border-slate-200 flex items-center justify-center">−</button>
+            </div>
+
+            <!-- Legend Overlay -->
+            <div class="absolute bottom-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 bg-slate-950/75 backdrop-blur text-white text-[11px] px-3 py-2 rounded-xl border border-white/10 pointer-events-none">
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block shadow"></span>선택 매물(층·라인)</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block"></span>선택 동</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block"></span>같은 단지 타 동</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span>공원·녹지</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-sky-400 inline-block"></span>하천</span>
+              </div>
+              <span class="text-[10px] text-slate-300">드래그: 회전 · 휠/핀치: 확대·축소</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Selected Unit Position & Surrounding Landmarks -->
+        <div class="lg:col-span-4 space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="navigation" class="w-4 h-4 text-blue-600"></i>
+              선택 매물 위치 · 조망 분석
+            </h3>
+            <div id="loc-unit-analysis" class="space-y-2 text-xs text-slate-700"></div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="trees" class="w-4 h-4 text-emerald-600"></i>
+              주변 주요 시설 · 도로 · 인접 단지
+            </h3>
+            <div id="loc-surroundings-list" class="space-y-2 text-xs"></div>
+          </div>
+
+          <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-2.5">
+            <p class="text-xs font-bold text-slate-800">실제 위성·거리뷰 바로 확인</p>
+            <div class="grid grid-cols-2 gap-2">
+              <a id="loc-naver-map-link" href="https://map.naver.com/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                네이버 지도
+              </a>
+              <a id="loc-kakao-map-link" href="https://map.kakao.com/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-900 text-xs font-bold transition">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                카카오맵
+              </a>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -605,6 +748,10 @@
           <div>
             <label for="new-cx-price" class="block text-xs font-medium text-slate-600 mb-1">주력 33평 시세 (억원)</label>
             <input id="new-cx-price" type="number" step="0.1" value="8.5" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="new-cx-parking" class="block text-xs font-medium text-slate-600 mb-1">세대당 주차대수</label>
+            <input id="new-cx-parking" type="text" value="1.50대" placeholder="예: 1.46대 (917대)" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -2003,7 +2150,7 @@
       ).join("");
 
       const cx = getActiveComplex();
-      document.getElementById("header-complex-sub").textContent = `${cx.address} · ${cx.totalUnits}세대 · ${cx.moveIn}`;
+      document.getElementById("header-complex-sub").textContent = `${cx.address} · ${cx.totalUnits}세대 · 주차 ${cx.parking || "미등록"} · ${cx.moveIn}`;
 
       // Populate fav filter dropdown too
       const favSel = document.getElementById("fav-complex-filter");
@@ -2027,9 +2174,16 @@
           <p class="text-[11px] text-slate-500">건폐율 / 용적률</p>
           <p class="text-sm font-bold text-slate-900 mt-0.5">${cx.ratio}</p>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-3">
-          <p class="text-[11px] text-slate-500">세대당 주차</p>
-          <p class="text-sm font-bold text-slate-900 mt-0.5">${cx.parking}</p>
+        <div class="bg-emerald-50/60 rounded-xl border border-emerald-200 p-3">
+          <div class="flex items-center justify-between gap-1">
+            <p class="text-[11px] font-semibold text-emerald-700">세대당 주차</p>
+            <button id="btn-edit-parking" type="button" class="text-[10px] font-bold text-emerald-700 hover:underline">수정</button>
+          </div>
+          <p id="parking-display-text" class="text-sm font-bold text-slate-900 mt-0.5">${cx.parking || "미등록"}</p>
+          <div id="parking-edit-box" class="hidden mt-1.5 flex items-center gap-1">
+            <input id="parking-edit-input" type="text" value="${cx.parking || ''}" placeholder="예: 1.46대 (917대)" class="w-full min-w-0 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800" />
+            <button id="btn-save-parking" type="button" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shrink-0">저장</button>
+          </div>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-3">
           <p class="text-[11px] text-slate-500">${cx.repPyung}평 최근 실거래</p>
@@ -2040,6 +2194,28 @@
           <p class="text-sm font-bold text-amber-600 mt-0.5">${cx.royalNote}</p>
         </div>
       `;
+      const editBtn = document.getElementById("btn-edit-parking");
+      const editBox = document.getElementById("parking-edit-box");
+      const dispTxt = document.getElementById("parking-display-text");
+      const saveBtn = document.getElementById("btn-save-parking");
+      const inp = document.getElementById("parking-edit-input");
+      if (editBtn && editBox && saveBtn && inp) {
+        editBtn.addEventListener("click", () => {
+          editBox.classList.toggle("hidden");
+          if (!editBox.classList.contains("hidden")) inp.focus();
+        });
+        saveBtn.addEventListener("click", () => {
+          const val = inp.value.trim();
+          if (!val) return;
+          cx.parking = val;
+          saveState();
+          dispTxt.textContent = val;
+          editBox.classList.add("hidden");
+          renderComplexSelector();
+          if (state.activePage === "location") renderPageLocation();
+          showToast(`세대당 주차 정보가 "${val}"로 저장되었습니다.`);
+        });
+      }
     }
 
     function populateDongDropdown() {
@@ -2814,24 +2990,30 @@
 
     function switchPage(page) {
       state.activePage = page;
-      const pages = { unit: "page-unit", price: "page-price", favorites: "page-favorites" };
-      const tabs = { unit: "tab-page1", price: "tab-page2", favorites: "tab-page3" };
+      const pages = { unit: "page-unit", location: "page-location", price: "page-price", favorites: "page-favorites" };
+      const tabs = { unit: "tab-page1", location: "tab-page4", price: "tab-page2", favorites: "tab-page3" };
 
       Object.keys(pages).forEach(k => {
         const sec = document.getElementById(pages[k]);
         const tab = document.getElementById(tabs[k]);
         if (k === page) {
           sec.classList.remove("hidden");
-          tab.className = "px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-blue-700 shadow-sm inline-flex items-center gap-1";
+          tab.className = "px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-blue-700 shadow-sm whitespace-nowrap inline-flex items-center gap-1";
         } else {
           sec.classList.add("hidden");
-          tab.className = "px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 inline-flex items-center gap-1";
+          tab.className = "px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 whitespace-nowrap inline-flex items-center gap-1";
         }
       });
 
       if (page === "unit") {
         renderPage1();
         setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+      } else if (page === "location") {
+        renderPageLocation();
+        setTimeout(() => {
+          resizeLoc3D();
+          window.dispatchEvent(new Event("resize"));
+        }, 60);
       } else if (page === "price") {
         renderPage2();
       } else if (page === "favorites") {
@@ -2878,6 +3060,7 @@
 
     function bindEvents() {
       document.getElementById("tab-page1").addEventListener("click", () => switchPage("unit"));
+      document.getElementById("tab-page4").addEventListener("click", () => switchPage("location"));
       document.getElementById("tab-page2").addEventListener("click", () => switchPage("price"));
       document.getElementById("tab-page3").addEventListener("click", () => switchPage("favorites"));
 
@@ -2895,6 +3078,7 @@
         state.memo = "";
         syncFormInputs();
         if (state.activePage === "unit") renderPage1();
+        else if (state.activePage === "location") { renderComplexSelector(); renderPageLocation(); }
         else if (state.activePage === "price") { renderComplexSelector(); renderPage2(); }
         else { renderComplexSelector(); renderPage3(); }
         showToast(`${cx.name} 데이터를 불러왔습니다.`);
@@ -2919,7 +3103,7 @@
         state.complexes[id] = {
           id, name, shortName: name.slice(0, 10), address: addr,
           totalUnits: units, dongCount: 4, moveIn, floorRange: `${maxF}층`,
-          ratio: "직접 입력", parking: "1.5대(예상)", royalNote: "101동 · 로열층",
+          ratio: "직접 입력", parking: (document.getElementById("new-cx-parking").value.trim() || "1.50대"), royalNote: "101동 · 로열층",
           repPyung: 33, recentTxLabel: `${price.toFixed(2)}억`, recentTxSub: "사용자 입력 기준",
           marketSale: `${price.toFixed(2)}억`, marketJeonse: `전세 ${(price * 0.65).toFixed(2)}억`,
           growth1y: "-", growthSub: "직접 추가된 단지", gaeumRank: "사용자 등록", pyungPrice: pyungP,
@@ -3183,6 +3367,699 @@
       });
     }
 
+
+    // ==================== 9.5. THREE.JS 3D LOCATION & SURROUNDINGS MAP ====================
+    const locMap = {
+      inited: false,
+      scene: null,
+      camera: null,
+      renderer: null,
+      worldGroup: null,
+      highlightBeacon: null,
+      viewMode: "3d", // "3d" | "top"
+      azimuth: 0,     // 0 rad => North (-Z) strictly UP on screen!
+      polar: 0.78,    // tilt angle from vertical (0.04 = top view, 0.78 = 3D aerial)
+      radius: 76,
+      target: { x: 0, y: 4, z: 0 },
+      isDragging: false,
+      lastX: 0,
+      lastY: 0,
+      pinchDist: 0,
+      rafId: null,
+      selectedDongPos: { x: 0, y: 5, z: 0 }
+    };
+
+    // Real relative layout for Gaeum-dong complexes (North = -Z, South = +Z, East = +X, West = -X)
+    const GAEUM_SITE_PRESETS = {
+      "thesharp2": {
+        centerLabel: "더샵 2단지",
+        dongCoords: {
+          "201": [-14, 10, 0],
+          "202": [0, 12, 0.08],
+          "203": [14, 10, -0.05],
+          "204": [-14, -8, 0.04],
+          "205": [0, -10, 0],
+          "206": [14, -8, -0.04]
+        },
+        surroundings: [
+          { type: "road", name: "원이대로 (북측 간선)", x: 0, z: -48, w: 120, d: 8, color: 0x334155 },
+          { type: "road", name: "창원대로 (남측 간선)", x: 0, z: 50, w: 120, d: 9, color: 0x334155 },
+          { type: "road", name: "대정로 (동측)", x: 34, z: 0, w: 6, d: 102, color: 0x475569 },
+          { type: "road", name: "가음정로 (서·남측)", x: -36, z: 4, w: 5.5, d: 96, color: 0x475569 },
+          { type: "stream", name: "가음정천", x: -29, z: 2, w: 4.5, d: 94 },
+          { type: "park", name: "기업사랑공원", x: -48, z: 18, w: 18, d: 24 },
+          { type: "park", name: "장미·가음정공원", x: -46, z: -20, w: 16, d: 20 },
+          { type: "school", name: "남정초등학교", x: -18, z: -34, w: 14, d: 10 },
+          { type: "neighbor", name: "더샵 1단지", x: 14, z: -32, w: 22, d: 14, h: 12 },
+          { type: "neighbor", name: "더샵 3단지", x: 48, z: 10, w: 18, d: 24, h: 13 },
+          { type: "neighbor", name: "가음한화꿈에그린", x: -2, z: -34, w: 16, d: 12, h: 13 },
+          { type: "neighbor", name: "창원자이시그니처", x: -46, z: -36, w: 16, d: 12, h: 15 },
+          { type: "neighbor", name: "창원센텀푸르지오", x: -8, z: 34, w: 28, d: 16, h: 14 }
+        ],
+        infoItems: [
+          { tag: "북측", name: "원이대로 · 남정초 · 더샵 1단지", desc: "도보권 초등학교 및 성산구 핵심 간선도로" },
+          { tag: "서측", name: "가음정천 · 기업사랑공원 · 장미공원", desc: "수변 산책로와 대형 공원 조망(201·204동 유리)" },
+          { tag: "동측", name: "대정로 · 대정사거리 · 더샵 3단지", desc: "단지 주출입구 및 상권·버스정류장 접근 우수" },
+          { tag: "남측", name: "창원센텀푸르지오 · 창원대로", desc: "남향 채광 확보 및 창원산단·상남동 차량 이동 편리" }
+        ]
+      },
+      "thesharp1": {
+        centerLabel: "더샵 1단지",
+        dongCoords: {
+          "101": [-12, 8, 0.05],
+          "102": [2, 10, 0],
+          "103": [14, 4, -0.05],
+          "104": [-4, -8, 0]
+        },
+        surroundings: [
+          { type: "road", name: "원이대로 (북측)", x: 0, z: -34, w: 110, d: 8, color: 0x334155 },
+          { type: "road", name: "대정로 (동측)", x: 34, z: 6, w: 6, d: 96, color: 0x475569 },
+          { type: "road", name: "창원대로 (남측)", x: 0, z: 54, w: 110, d: 9, color: 0x334155 },
+          { type: "stream", name: "가음정천", x: -34, z: 10, w: 4.5, d: 86 },
+          { type: "park", name: "장미·가음정공원", x: -48, z: -12, w: 16, d: 20 },
+          { type: "school", name: "남정초등학교", x: -24, z: -18, w: 14, d: 10 },
+          { type: "neighbor", name: "더샵 2단지", x: -6, z: 30, w: 28, d: 18, h: 14 },
+          { type: "neighbor", name: "더샵 3단지", x: 46, z: 24, w: 18, d: 22, h: 13 },
+          { type: "neighbor", name: "가음한화꿈에그린", x: -24, z: 4, w: 15, d: 14, h: 13 }
+        ],
+        infoItems: [
+          { tag: "북측", name: "원이대로 (바로 인접)", desc: "성산구 핵심 도로 진입 및 상남동·용호동 접근성 우수" },
+          { tag: "서측", name: "남정초등학교 · 한화꿈에그린", desc: "도보 통학 편리 및 쾌적한 주거 블록" },
+          { tag: "남측", name: "더샵 2단지 · 센텀푸르지오", desc: "대단지 브랜드 타운 생활권 공유" },
+          { tag: "동측", name: "대정로 · 더샵 3단지", desc: "대정사거리 대중교통 및 근린상가 인접" }
+        ]
+      },
+      "thesharp3": {
+        centerLabel: "더샵 3단지",
+        dongCoords: {
+          "301": [-12, 10, 0],
+          "302": [4, 12, -0.05],
+          "303": [16, 4, 0],
+          "304": [-10, -8, 0.05],
+          "305": [8, -10, 0]
+        },
+        surroundings: [
+          { type: "road", name: "대정로 (서측)", x: -30, z: 0, w: 6, d: 102, color: 0x475569 },
+          { type: "road", name: "원이대로 (북측)", x: 0, z: -46, w: 115, d: 8, color: 0x334155 },
+          { type: "road", name: "창원대로 (남측)", x: 0, z: 46, w: 115, d: 9, color: 0x334155 },
+          { type: "park", name: "가음근린공원", x: 38, z: -12, w: 18, d: 24 },
+          { type: "school", name: "남산중학교 방향", x: 36, z: 22, w: 14, d: 12 },
+          { type: "neighbor", name: "더샵 2단지", x: -46, z: -4, w: 22, d: 22, h: 14 },
+          { type: "neighbor", name: "더샵 1단지", x: -44, z: -30, w: 20, d: 14, h: 12 },
+          { type: "neighbor", name: "창원센텀푸르지오", x: -42, z: 28, w: 24, d: 14, h: 14 }
+        ],
+        infoItems: [
+          { tag: "서측", name: "대정로 · 더샵 2단지", desc: "대정로 바로 접면, 더샵 브랜드 타운 중심축" },
+          { tag: "동측", name: "가음근린공원 · 남산동 학군", desc: "동측 공원 녹지 및 남산중·고 통학권" },
+          { tag: "남측", name: "창원대로 (차량 이동)", desc: "창원국가산단 및 시외 이동 최적" },
+          { tag: "북측", name: "원이대로 · 대정사거리", desc: "성산구 중심 상권 및 관공서 빠른 접근" }
+        ]
+      }
+    };
+
+    function makeTextSprite(text, bgColor, textColor, scaleW) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 256;
+      canvas.height = 64;
+      ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.86)";
+      const r = 14;
+      ctx.beginPath();
+      ctx.moveTo(r, 8); ctx.lineTo(256 - r, 8); ctx.quadraticCurveTo(256 - 4, 8, 256 - 4, 8 + r);
+      ctx.lineTo(256 - 4, 56 - r); ctx.quadraticCurveTo(256 - 4, 56, 256 - r, 56);
+      ctx.lineTo(r, 56); ctx.quadraticCurveTo(4, 56, 4, 56 - r);
+      ctx.lineTo(4, 8 + r); ctx.quadraticCurveTo(4, 8, r, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.28)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = "bold 26px 'Inter', sans-serif";
+      ctx.fillStyle = textColor || "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 128, 33);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(mat);
+      const sw = scaleW || 11;
+      sprite.scale.set(sw, sw * 0.25, 1);
+      sprite.renderOrder = 20;
+      return sprite;
+    }
+
+    function initLoc3DScene() {
+      const container = document.getElementById("loc-3d-canvas");
+      if (!container || typeof THREE === "undefined" || locMap.inited) return;
+
+      const w = container.clientWidth || 720;
+      const h = container.clientHeight || 480;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xeef2f7);
+      scene.fog = new THREE.Fog(0xeef2f7, 130, 260);
+
+      const camera = new THREE.PerspectiveCamera(42, w / h, 0.5, 450);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.innerHTML = "";
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      const hemi = new THREE.HemisphereLight(0xffffff, 0xcbd5e1, 0.88);
+      scene.add(hemi);
+      const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.85);
+      dirLight.position.set(45, 78, 42);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      dirLight.shadow.camera.near = 10;
+      dirLight.shadow.camera.far = 220;
+      const d = 70;
+      dirLight.shadow.camera.left = -d;
+      dirLight.shadow.camera.right = d;
+      dirLight.shadow.camera.top = d;
+      dirLight.shadow.camera.bottom = -d;
+      scene.add(dirLight);
+
+      const worldGroup = new THREE.Group();
+      scene.add(worldGroup);
+
+      locMap.scene = scene;
+      locMap.camera = camera;
+      locMap.renderer = renderer;
+      locMap.worldGroup = worldGroup;
+      locMap.inited = true;
+
+      // Mouse & Touch Orbit Controls
+      const dom = renderer.domElement;
+      dom.addEventListener("pointerdown", e => {
+        locMap.isDragging = true;
+        locMap.lastX = e.clientX;
+        locMap.lastY = e.clientY;
+        dom.setPointerCapture(e.pointerId);
+      });
+      dom.addEventListener("pointermove", e => {
+        if (!locMap.isDragging) return;
+        const dx = e.clientX - locMap.lastX;
+        const dy = e.clientY - locMap.lastY;
+        locMap.lastX = e.clientX;
+        locMap.lastY = e.clientY;
+        locMap.azimuth -= dx * 0.008;
+        locMap.polar = Math.max(0.05, Math.min(1.38, locMap.polar - dy * 0.007));
+        updateLocCamera();
+      });
+      const stopDrag = () => { locMap.isDragging = false; };
+      dom.addEventListener("pointerup", stopDrag);
+      dom.addEventListener("pointercancel", stopDrag);
+
+      // Wheel zoom
+      dom.addEventListener("wheel", e => {
+        e.preventDefault();
+        locMap.radius = Math.max(24, Math.min(165, locMap.radius + e.deltaY * 0.06));
+        updateLocCamera();
+      }, { passive: false });
+
+      // Two-finger pinch zoom for tablet/mobile
+      dom.addEventListener("touchstart", e => {
+        if (e.touches.length === 2) {
+          locMap.isDragging = false;
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          locMap.pinchDist = Math.hypot(dx, dy);
+        }
+      }, { passive: true });
+      dom.addEventListener("touchmove", e => {
+        if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.hypot(dx, dy);
+          if (locMap.pinchDist > 0) {
+            const delta = locMap.pinchDist - dist;
+            locMap.radius = Math.max(24, Math.min(165, locMap.radius + delta * 0.25));
+            updateLocCamera();
+          }
+          locMap.pinchDist = dist;
+        }
+      }, { passive: true });
+
+      window.addEventListener("resize", resizeLoc3D);
+
+      // Animation loop (gentle beacon pulse)
+      let t = 0;
+      function animateLoc() {
+        locMap.rafId = requestAnimationFrame(animateLoc);
+        t += 0.05;
+        if (locMap.highlightBeacon) {
+          locMap.highlightBeacon.position.y = locMap.highlightBeacon.userData.baseY + Math.sin(t) * 0.6;
+          locMap.highlightBeacon.rotation.y += 0.025;
+        }
+        if (state.activePage === "location" && locMap.renderer && locMap.scene && locMap.camera) {
+          locMap.renderer.render(locMap.scene, locMap.camera);
+        }
+      }
+      animateLoc();
+    }
+
+    function resizeLoc3D() {
+      const container = document.getElementById("loc-3d-canvas");
+      if (!container || !locMap.renderer || !locMap.camera) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w < 10 || h < 10) return;
+      locMap.camera.aspect = w / h;
+      locMap.camera.updateProjectionMatrix();
+      locMap.renderer.setSize(w, h);
+    }
+
+    function updateLocCamera() {
+      if (!locMap.camera) return;
+      const r = locMap.radius;
+      const p = locMap.polar;
+      const a = locMap.azimuth;
+      // When azimuth = 0: camera is on +Z looking toward 0,0,0 => -Z (North) is strictly UP!
+      const x = locMap.target.x + r * Math.sin(p) * Math.sin(a);
+      const y = locMap.target.y + r * Math.cos(p);
+      const z = locMap.target.z + r * Math.sin(p) * Math.cos(a);
+      locMap.camera.position.set(x, y, z);
+      locMap.camera.lookAt(locMap.target.x, locMap.target.y, locMap.target.z);
+
+      // Sync compass needle & bearing readout
+      const deg = ((Math.round((-a * 180) / Math.PI) % 360) + 360) % 360;
+      const needle = document.getElementById("loc-compass-needle");
+      if (needle) needle.style.transform = `rotate(${-deg}deg)`;
+      const bearingEl = document.getElementById("loc-bearing-text");
+      if (bearingEl) {
+        bearingEl.textContent = deg === 0 ? "북쪽 위 고정 (0°)" : `회전 각도 ${deg}° (N↑ 복귀 가능)`;
+      }
+      const viewEl = document.getElementById("loc-view-label");
+      if (viewEl) {
+        viewEl.textContent = locMap.polar < 0.22 ? "탑 뷰 (2D 지도)" : "3D 입체 뷰";
+      }
+    }
+
+    function buildLoc3DWorld() {
+      if (!locMap.inited) initLoc3DScene();
+      if (!locMap.worldGroup) return;
+
+      // Clear previous meshes cleanly
+      while (locMap.worldGroup.children.length > 0) {
+        locMap.worldGroup.remove(locMap.worldGroup.children[0]);
+      }
+      locMap.highlightBeacon = null;
+
+      const cx = getActiveComplex();
+      const bKeys = Object.keys(cx.buildings);
+      const selDongKey = cx.buildings[state.selectedDong] ? state.selectedDong : bKeys[0];
+      const floor = Math.floor(state.selectedHo / 100) || 10;
+      const line = (state.selectedHo % 100) || 1;
+      const preset = GAEUM_SITE_PRESETS[cx.id] || null;
+
+      // 1. Base Ground Plane + Subtle City Grid
+      const groundGeo = new THREE.PlaneGeometry(240, 240);
+      const groundMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      locMap.worldGroup.add(ground);
+
+      // Active Complex Courtyard Pad
+      const padGeo = new THREE.BoxGeometry(50, 0.3, 42);
+      const padMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+      const pad = new THREE.Mesh(padGeo, padMat);
+      pad.position.set(0, 0.15, 0);
+      pad.receiveShadow = true;
+      locMap.worldGroup.add(pad);
+
+      // Central Complex Garden / Lawn
+      const lawnGeo = new THREE.BoxGeometry(20, 0.35, 10);
+      const lawnMat = new THREE.MeshLambertMaterial({ color: 0x86efac });
+      const lawn = new THREE.Mesh(lawnGeo, lawnMat);
+      lawn.position.set(0, 0.2, 1);
+      locMap.worldGroup.add(lawn);
+
+      // North Arrow painted on ground edge (-Z = North)
+      const northSprite = makeTextSprite("▲ 북쪽 (NORTH)", "rgba(225, 29, 72, 0.9)", "#ffffff", 13);
+      northSprite.position.set(0, 2.5, -58);
+      locMap.worldGroup.add(northSprite);
+
+      // 2. Surroundings (Roads, Parks, Stream, Schools, Neighboring Complexes)
+      const surroundings = preset ? preset.surroundings : [
+        { type: "road", name: "북측 간선도로", x: 0, z: -40, w: 110, d: 7, color: 0x334155 },
+        { type: "road", name: "남측 대로", x: 0, z: 42, w: 110, d: 8, color: 0x334155 },
+        { type: "road", name: "동측 진입로", x: 36, z: 0, w: 5.5, d: 90, color: 0x475569 },
+        { type: "park", name: "인근 근린공원", x: -42, z: 6, w: 20, d: 28 },
+        { type: "school", name: "인근 초·중학교", x: -18, z: -28, w: 14, d: 10 },
+        { type: "neighbor", name: "인접 아파트 단지 A", x: 48, z: -8, w: 18, d: 22, h: 12 },
+        { type: "neighbor", name: "인접 아파트 단지 B", x: 14, z: 30, w: 22, d: 14, h: 11 }
+      ];
+
+      surroundings.forEach(item => {
+        if (item.type === "road") {
+          const rGeo = new THREE.BoxGeometry(item.w, 0.22, item.d);
+          const rMat = new THREE.MeshLambertMaterial({ color: item.color || 0x475569 });
+          const road = new THREE.Mesh(rGeo, rMat);
+          road.position.set(item.x, 0.11, item.z);
+          road.receiveShadow = true;
+          locMap.worldGroup.add(road);
+
+          // Center dashed line
+          const isHoriz = item.w > item.d;
+          const dashGeo = new THREE.BoxGeometry(isHoriz ? item.w * 0.9 : 0.35, 0.25, isHoriz ? 0.35 : item.d * 0.9);
+          const dashMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+          const dash = new THREE.Mesh(dashGeo, dashMat);
+          dash.position.set(item.x, 0.14, item.z);
+          locMap.worldGroup.add(dash);
+
+          const sp = makeTextSprite(item.name, "rgba(30, 41, 59, 0.88)", "#f8fafc", 13);
+          sp.position.set(item.x, 2.5, item.z);
+          locMap.worldGroup.add(sp);
+        } else if (item.type === "stream") {
+          const sGeo = new THREE.BoxGeometry(item.w, 0.18, item.d);
+          const sMat = new THREE.MeshLambertMaterial({ color: 0x38bdf8 });
+          const st = new THREE.Mesh(sGeo, sMat);
+          st.position.set(item.x, 0.09, item.z);
+          locMap.worldGroup.add(st);
+          const sp = makeTextSprite(item.name, "rgba(2, 132, 199, 0.9)", "#ffffff", 10);
+          sp.position.set(item.x, 2.2, item.z);
+          locMap.worldGroup.add(sp);
+        } else if (item.type === "park") {
+          const pGeo = new THREE.BoxGeometry(item.w, 0.35, item.d);
+          const pMat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
+          const pk = new THREE.Mesh(pGeo, pMat);
+          pk.position.set(item.x, 0.18, item.z);
+          pk.receiveShadow = true;
+          locMap.worldGroup.add(pk);
+
+          // Add 3D Trees
+          const treeTrunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+          const treeTopMat = new THREE.MeshLambertMaterial({ color: 0x16a34a });
+          for (let ti = 0; ti < 6; ti++) {
+            const tx = item.x + ((ti % 3) - 1) * (item.w * 0.28);
+            const tz = item.z + (Math.floor(ti / 3) - 0.5) * (item.d * 0.36);
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 1.4, 6), treeTrunkMat);
+            trunk.position.set(tx, 0.9, tz);
+            const crown = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3.2, 7), treeTopMat);
+            crown.position.set(tx, 2.8, tz);
+            crown.castShadow = true;
+            locMap.worldGroup.add(trunk, crown);
+          }
+          const sp = makeTextSprite(item.name, "rgba(21, 128, 61, 0.92)", "#ffffff", 12);
+          sp.position.set(item.x, 5.2, item.z);
+          locMap.worldGroup.add(sp);
+        } else if (item.type === "school") {
+          const schGeo = new THREE.BoxGeometry(item.w, 3.8, item.d);
+          const schMat = new THREE.MeshLambertMaterial({ color: 0xfde68a });
+          const sch = new THREE.Mesh(schGeo, schMat);
+          sch.position.set(item.x, 1.9, item.z);
+          sch.castShadow = true;
+          locMap.worldGroup.add(sch);
+          const sp = makeTextSprite(item.name, "rgba(180, 83, 9, 0.92)", "#ffffff", 12);
+          sp.position.set(item.x, 6.2, item.z);
+          locMap.worldGroup.add(sp);
+        } else if (item.type === "neighbor") {
+          const nGeo = new THREE.BoxGeometry(item.w, item.h || 12, item.d);
+          const nMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.72 });
+          const nb = new THREE.Mesh(nGeo, nMat);
+          nb.position.set(item.x, (item.h || 12) / 2, item.z);
+          nb.castShadow = true;
+          nb.receiveShadow = true;
+          locMap.worldGroup.add(nb);
+          const sp = makeTextSprite(item.name, "rgba(71, 85, 105, 0.85)", "#f1f5f9", 12);
+          sp.position.set(item.x, (item.h || 12) + 2.8, item.z);
+          locMap.worldGroup.add(sp);
+        }
+      });
+
+      // 3. Active Complex Buildings (Every Dong + Selected Dong + Selected Floor/Line Unit!)
+      bKeys.forEach((dk, idx) => {
+        const b = cx.buildings[dk];
+        const isSelDong = dk === selDongKey;
+
+        // Position each Dong neatly
+        let bx, bz, rotY = 0;
+        if (preset && preset.dongCoords && preset.dongCoords[dk]) {
+          [bx, bz, rotY] = preset.dongCoords[dk];
+        } else {
+          const cols = Math.min(3, Math.ceil(Math.sqrt(bKeys.length)));
+          const col = idx % cols;
+          const row = Math.floor(idx / cols);
+          bx = (col - (cols - 1) / 2) * 15;
+          bz = (row - (Math.ceil(bKeys.length / cols) - 1) / 2) * 16;
+        }
+
+        const bWidth = 10.5;
+        const bDepth = 4.2;
+        const bHeight = Math.max(6, (b.maxFloor || 25) * 0.56);
+
+        const dongGroup = new THREE.Group();
+        dongGroup.position.set(bx, 0, bz);
+        dongGroup.rotation.y = rotY;
+
+        // Main Tower Body
+        const bodyMat = new THREE.MeshLambertMaterial({
+          color: isSelDong ? 0x2563eb : 0xffffff
+        });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(bWidth, bHeight, bDepth), bodyMat);
+        body.position.y = bHeight / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        dongGroup.add(body);
+
+        // Roof Cap
+        const roof = new THREE.Mesh(
+          new THREE.BoxGeometry(bWidth + 0.3, 0.45, bDepth + 0.3),
+          new THREE.MeshLambertMaterial({ color: isSelDong ? 0x1d4ed8 : 0x64748b })
+        );
+        roof.position.y = bHeight + 0.22;
+        dongGroup.add(roof);
+
+        // Subtle Horizontal Floor Lines on Selected Dong
+        if (isSelDong) {
+          const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(new THREE.BoxGeometry(bWidth + 0.06, bHeight + 0.06, bDepth + 0.06)),
+            new THREE.LineBasicMaterial({ color: 0x93c5fd })
+          );
+          edges.position.y = bHeight / 2;
+          dongGroup.add(edges);
+
+          // Highlight EXACT Selected Unit (Floor + Line 1..4)!
+          const clampedFloor = Math.max(1, Math.min(b.maxFloor || 25, floor));
+          const unitH = Math.max(0.75, bHeight / (b.maxFloor || 25));
+          const unitY = (clampedFloor - 0.5) * (bHeight / (b.maxFloor || 25));
+          const clampedLine = Math.max(1, Math.min(4, line));
+          const lineW = bWidth / 4;
+          const unitX = -bWidth / 2 + (clampedLine - 0.5) * lineW;
+
+          const unitBox = new THREE.Mesh(
+            new THREE.BoxGeometry(lineW + 0.35, unitH + 0.35, bDepth + 0.55),
+            new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+          );
+          unitBox.position.set(unitX, unitY, 0);
+          dongGroup.add(unitBox);
+
+          // View / Sunlight Direction Sight Cone from the Unit Facade
+          const lineInfo = (b.lines && b.lines[clampedLine]) ? b.lines[clampedLine] : { dir: "남향", azimuth: 180 };
+          const azRad = ((lineInfo.azimuth || 180) - 180) * Math.PI / 180; // 180 deg South => +Z
+          const coneGeo = new THREE.ConeGeometry(3.2, 10, 16, 1, true);
+          const coneMat = new THREE.MeshBasicMaterial({
+            color: 0xfbbf24,
+            transparent: true,
+            opacity: 0.28,
+            side: THREE.DoubleSide
+          });
+          const cone = new THREE.Mesh(coneGeo, coneMat);
+          // Point cone outward in unit facing direction (+Z = South)
+          cone.rotation.x = -Math.PI / 2;
+          const conePivot = new THREE.Group();
+          conePivot.position.set(unitX, unitY, 0);
+          conePivot.rotation.y = -azRad;
+          cone.position.set(0, 0, 7.2);
+          conePivot.add(cone);
+          dongGroup.add(conePivot);
+
+          // Floating Pulsing Beacon Pin above Selected Unit
+          const beaconGeo = new THREE.OctahedronGeometry(1.15, 0);
+          const beaconMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+          const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+          beacon.position.set(unitX, bHeight + 4.2, 0);
+          beacon.userData.baseY = bHeight + 4.2;
+          dongGroup.add(beacon);
+          locMap.highlightBeacon = beacon;
+
+          // Unit Floating Tag
+          const unitLabel = makeTextSprite(`${b.name} ${state.selectedHo}호`, "rgba(217, 119, 6, 0.96)", "#ffffff", 12.5);
+          unitLabel.position.set(unitX, bHeight + 7.2, 0);
+          dongGroup.add(unitLabel);
+
+          locMap.selectedDongPos = { x: bx, y: Math.max(3, unitY * 0.6), z: bz };
+        } else {
+          // Normal Dong Roof Label
+          const dLabel = makeTextSprite(b.name, "rgba(30, 41, 59, 0.85)", "#ffffff", 8.2);
+          dLabel.position.set(0, bHeight + 2.4, 0);
+          dongGroup.add(dLabel);
+        }
+
+        locMap.worldGroup.add(dongGroup);
+      });
+
+      updateLocCamera();
+    }
+
+    function renderPageLocation() {
+      const cx = getActiveComplex();
+      const bKeys = Object.keys(cx.buildings);
+      if (!cx.buildings[state.selectedDong]) state.selectedDong = bKeys[0];
+      const b = cx.buildings[state.selectedDong];
+      const floor = Math.max(1, Math.min(b.maxFloor, Math.floor(state.selectedHo / 100) || 10));
+      const line = Math.max(1, Math.min(4, (state.selectedHo % 100) || 1));
+      const lineInfo = b.lines[line] || b.lines[1];
+
+      // Header Badges
+      document.getElementById("loc-unit-badge").textContent = `${b.name} ${state.selectedHo}호 (${floor}/${b.maxFloor}층)`;
+      document.getElementById("loc-dir-badge").textContent = `${lineInfo.dir} · ${lineInfo.bay} ${lineInfo.layout}`;
+      document.getElementById("loc-parking-badge").textContent = `세대당 주차 ${cx.parking || "미등록"}`;
+      document.getElementById("loc-complex-title").textContent = `${cx.name} · 3D 위치 및 주변 입지`;
+      document.getElementById("loc-complex-addr").textContent = `${cx.address} · 기본 북쪽(N↑) 고정 · 드래그/터치로 360° 회전 가능`;
+
+      // Dong Pills
+      const pillsEl = document.getElementById("loc-dong-pills");
+      pillsEl.innerHTML = bKeys.map(dk => {
+        const active = dk === state.selectedDong;
+        return `<button type="button" data-loc-dong="${dk}" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${active ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">${cx.buildings[dk].name}</button>`;
+      }).join("");
+      pillsEl.querySelectorAll("[data-loc-dong]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.selectedDong = btn.getAttribute("data-loc-dong");
+          const nb = cx.buildings[state.selectedDong];
+          const nf = Math.min(floor, nb.maxFloor);
+          state.selectedHo = nf * 100 + line;
+          renderPageLocation();
+        });
+      });
+
+      // Floor & Line Selects
+      const fSel = document.getElementById("loc-floor-select");
+      fSel.innerHTML = Array.from({ length: b.maxFloor }, (_, i) => b.maxFloor - i).map(f =>
+        `<option value="${f}" ${f === floor ? 'selected' : ''}>${f}층</option>`
+      ).join("");
+      const lSel = document.getElementById("loc-line-select");
+      lSel.value = String(line);
+
+      // Right Side Analysis Card
+      const tier = floor / b.maxFloor >= 0.7 ? "고층 (개방감·조망 우수)" : floor / b.maxFloor >= 0.35 ? "중층 (선호 로열 구간)" : "저층 (단지 조경·출입 편리)";
+      document.getElementById("loc-unit-analysis").innerHTML = `
+        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">선택 매물</span><span class="font-bold text-slate-900">${b.name} ${state.selectedHo}호</span></div>
+        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">층수 구간</span><span class="font-semibold text-blue-700">${floor}층 / 최고 ${b.maxFloor}층 · ${tier}</span></div>
+        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">라인 · 향</span><span class="font-semibold text-amber-700">${line}호라인 (${lineInfo.type}) · ${lineInfo.dir}</span></div>
+        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">세대당 주차</span><span class="font-bold text-emerald-700">${cx.parking || "미등록"}</span></div>
+        <p class="text-[11px] text-slate-500 pt-1">주황색 부채꼴 영역이 해당 호수의 주 채광·조망 방향(${lineInfo.dir})을 나타냅니다.</p>
+      `;
+
+      // Surroundings List
+      const preset = GAEUM_SITE_PRESETS[cx.id];
+      const infoItems = preset ? preset.infoItems : [
+        { tag: "북측", name: "북측 간선도로 · 학군 방향", desc: "기본 지도 상단(N↑)이 정북 방향입니다." },
+        { tag: "서측", name: "인근 근린공원 · 녹지", desc: "3D 뷰를 회전해 주변 개방감을 확인하세요." },
+        { tag: "동·남측", name: "진입로 및 인접 주거 단지", desc: "아래 네이버 지도·카카오맵 버튼으로 실제 위성지도를 함께 볼 수 있습니다." }
+      ];
+      document.getElementById("loc-surroundings-list").innerHTML = infoItems.map(it => `
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="flex items-center gap-1.5">
+            <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">${it.tag}</span>
+            <span class="font-bold text-slate-800">${it.name}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">${it.desc}</p>
+        </div>
+      `).join("");
+
+      // Real External Map Deep Links
+      const q = encodeURIComponent(cx.name);
+      document.getElementById("loc-naver-map-link").href = `https://map.naver.com/p/search/${q}`;
+      document.getElementById("loc-kakao-map-link").href = `https://map.kakao.com/?q=${q}`;
+
+      // Rebuild 3D World
+      buildLoc3DWorld();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function bindLocEvents() {
+      const btn3d = document.getElementById("btn-loc-3d");
+      const btnTop = document.getElementById("btn-loc-top");
+      const btnNorth = document.getElementById("btn-loc-north");
+      const btnFocus = document.getElementById("btn-loc-focus");
+      const btnZoomIn = document.getElementById("btn-loc-zoom-in");
+      const btnZoomOut = document.getElementById("btn-loc-zoom-out");
+      const fSel = document.getElementById("loc-floor-select");
+      const lSel = document.getElementById("loc-line-select");
+
+      function updateViewBtnStyles(mode) {
+        locMap.viewMode = mode;
+        if (mode === "3d") {
+          btn3d.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1";
+          btnTop.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1";
+        } else {
+          btnTop.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm transition inline-flex items-center gap-1";
+          btn3d.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition inline-flex items-center gap-1";
+        }
+      }
+
+      btn3d.addEventListener("click", () => {
+        updateViewBtnStyles("3d");
+        locMap.polar = 0.78;
+        locMap.radius = 74;
+        updateLocCamera();
+      });
+      btnTop.addEventListener("click", () => {
+        updateViewBtnStyles("top");
+        locMap.polar = 0.05;
+        locMap.azimuth = 0;
+        locMap.radius = 105;
+        locMap.target = { x: 0, y: 0, z: 0 };
+        updateLocCamera();
+      });
+      btnNorth.addEventListener("click", () => {
+        locMap.azimuth = 0;
+        updateLocCamera();
+        showToast("지도를 북쪽(N↑) 기준으로 정렬했습니다.");
+      });
+      btnFocus.addEventListener("click", () => {
+        updateViewBtnStyles("3d");
+        locMap.target = { ...locMap.selectedDongPos };
+        locMap.polar = 0.72;
+        locMap.radius = 40;
+        locMap.azimuth = 0;
+        updateLocCamera();
+      });
+      btnZoomIn.addEventListener("click", () => {
+        locMap.radius = Math.max(24, locMap.radius - 14);
+        updateLocCamera();
+      });
+      btnZoomOut.addEventListener("click", () => {
+        locMap.radius = Math.min(165, locMap.radius + 14);
+        updateLocCamera();
+      });
+
+      fSel.addEventListener("change", () => {
+        const f = parseInt(fSel.value, 10) || 10;
+        const l = parseInt(lSel.value, 10) || 1;
+        state.selectedHo = f * 100 + l;
+        renderPageLocation();
+      });
+      lSel.addEventListener("change", () => {
+        const f = parseInt(fSel.value, 10) || 10;
+        const l = parseInt(lSel.value, 10) || 1;
+        state.selectedHo = f * 100 + l;
+        renderPageLocation();
+      });
+    }
+
     // ==================== 10. CLOUDFLARE AUTO-SYNC LOADER (성산구·의창구) ====================
     async function loadLiveCloudflareData() {
       try {
@@ -3191,9 +4068,24 @@
         const payload = await res.json();
         if (!payload || !payload.complexes) return;
         let added = 0;
+        const KNOWN_PARKING = {
+          "창원더샵센트럴파크1단지": "1.40대 (543대)",
+          "창원더샵센트럴파크2단지": "1.46대 (917대)",
+          "창원더샵센트럴파크3단지": "1.31대 (590대)",
+          "창원가음한화꿈에그린": "1.57대 (1,182대)",
+          "창원센텀푸르지오": "1.51대 (1,474대)",
+          "창원자이시그니처": "1.59대 (1,250대)",
+          "창원자이": "2.00대 (272대)"
+        };
         Object.keys(payload.complexes).forEach(k => {
+          const liveItem = payload.complexes[k];
+          const cleanName = (liveItem.name || "").replace(/\s+/g, "");
+          if (!liveItem.parking || liveItem.parking === "단지 정보 참조") {
+            const matchedKey = Object.keys(KNOWN_PARKING).find(kn => cleanName.includes(kn));
+            liveItem.parking = matchedKey ? KNOWN_PARKING[matchedKey] : "미등록 (클릭해 수정)";
+          }
           if (!state.complexes[k]) {
-            state.complexes[k] = payload.complexes[k];
+            state.complexes[k] = liveItem;
             added++;
           } else {
             // Update existing complex's transactions & recent price with fresh API data
@@ -3221,6 +4113,7 @@
       loadSavedState();
       initThreeSunScene();
       bindEvents();
+      bindLocEvents();
       renderPage1();
       syncFormInputs();
       if (window.lucide) lucide.createIcons();
